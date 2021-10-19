@@ -41,8 +41,6 @@
     Paper: The drawbacks of explaining a text classifier's decisions using counterfactuals synthesized by masked language models
     <br />
     <br />
-    <a href="https://github.com/anguyen8/im">View Demo</a>
-    ·
     <a href="https://github.com/anguyen8/im/issues">Report Bug</a>
     ·
     <a href="https://github.com/anguyen8/im/issues">Request Feature</a>
@@ -80,7 +78,7 @@
 ## About The Project
 
 The project provides a rigorous evaluation using 5 metrics and 3 human-annotated datasets to better assess the attribution method Input Marginalization and compare with Leave-one-out - a simple yet strong baseline which remove a feature (i.e., token) by simply replacing it with an empty string.
-The source code was release for the following publication:
+The source code was released for the following publication:
 * [The drawbacks of explaining a text classifier's decisions using counterfactuals synthesized by masked language models](https://arxiv.org) (preprint)
 
 <!-- GETTING STARTED -->
@@ -112,24 +110,30 @@ The source code was release for the following publication:
 
 <!-- USAGE EXAMPLES -->
 
-## Usage (in-progress with roadmap below)
+## Usage
 
+###(in-progress with roadmap below)
 
-
-<!--
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos
-work well in this space. You may also link to more resources.
-
-_For more examples, please refer to the [Documentation](https://example.com)_
-
-<p align="right">(<a href="#top">back to top</a>)</p>
--->
-
-- [x] Prepare masked examples for SST-2, SST, e-SNLI and MultiRC datasets.
-- [x] Run attribution methods reported in our paper: 
-    - [x] Input Marginalization (IM)
-    - [x] Leave One Out variants: LOO<sub>empty</sub>, LOO<sub>unk</sub>, LOO<sub>zero</sub>
-    - [x] LIME and LIME<sub>BERT</sub>
+- Prepare masked examples for SST-2, SST, e-SNLI and MultiRC datasets.
+- Run attribution methods reported in our paper: 
+  
+    Note: Replace TASK_NAME with one of the following tasks: `SST-2`, `SST`, `ESNLI`, `MultiRC`.
+    
+    - Input Marginalization (IM)
+      ```sh
+      bash script/run_analyzers.sh TASK_NAME InputMargin
+      ```
+    - Leave One Out variants: LOO<sub>empty</sub>, LOO<sub>unk</sub>, LOO<sub>zero</sub>
+      ```sh
+      bash script/run_analyzers.sh TASK_NAME OccEmpty
+      bash script/run_analyzers.sh TASK_NAME OccUnk
+      bash script/run_analyzers.sh TASK_NAME OccZero
+      ```
+    - LIME and LIME<sub>BERT</sub>
+      ```sh
+      bash script/run_analyzers.sh TASK_NAME LIME
+      bash script/run_analyzers.sh TASK_NAME LIME-BERT  
+      ``` 
 - [x] Evaluation
     - [] Deletion and BERT-based Deletion (AUC vs. AUC<sub>rep</sub>)
     - [] RemOve And Retrain (ROAR)
@@ -145,9 +149,6 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 
 See the [open issues](https://github.com/anguyen8/im/issues) for a full list of proposed features (and
 known issues).
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
 
 
 <!-- CONTRIBUTING -->
@@ -166,18 +167,12 @@ simply open an issue with the tag "enhancement". Don't forget to give the projec
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-
 
 <!-- LICENSE -->
 
 ## License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
 
 
 <!-- CONTACT -->
@@ -187,9 +182,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 Thang Pham - [@pmthangxai](https://twitter.com/pmthangxai) - tmp0038@auburn.edu
 
 Project Link: [https://github.com/anguyen8/im](https://github.com/anguyen8/im)
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
 
 
 <!-- ACKNOWLEDGMENTS -->
