@@ -2,6 +2,10 @@ from os import makedirs
 from os.path import exists
 import pickle
 
+import sys
+from data_processors.data_objects import attribution_example
+sys.modules['attribution_example'] = attribution_example
+
 
 folder_name_dict = {
     "esnli": "ESNLI",
@@ -39,7 +43,11 @@ class Analyzer(object):
         masked_lm = model_wrapper.data_args.masked_lm
         masked_lm = "MLM-" + masked_lm if masked_lm and analyzer == "RIS" else None
 
-        self.prefix = "pickle_files/" + model_base + "/" + folder_name_dict[task_name] + "/" + checkpoint + "/" + analyzer + "/" + (masked_lm + "/" if masked_lm else "")
+        # RANDOM SEED ARE FOR ONLY SANITY CHECK
+        self.prefix = "../data/results/" + model_base + "/" + folder_name_dict[task_name] + "/" \
+                      + checkpoint + "/" + analyzer + "/" \
+                      + (str(model_wrapper.training_args.seed) + "/" if model_wrapper.training_args.seed else "") \
+                      + (masked_lm + "/" if masked_lm else "")
 
         # ThangPM 03-29-21:
         # If there are multiple splits --> suffix = _splitX.pickle

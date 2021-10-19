@@ -28,7 +28,7 @@ from .training_args import TrainingArguments, is_torch_tpu_available
 
 # ThangPM
 from scipy.special import softmax
-from ml_object import ML_Object
+from src.data_processors.data_objects.ml_object import ML_Object
 import pickle
 from os import makedirs
 from os.path import exists

@@ -101,9 +101,10 @@ def run_occlusion(model_wrapper, task_name, analyzer, pickle_fn, replaced_token)
                                      # FOR TESTING NEW EVALUATION METHOD --> IF USE, DISABLE RUN() AS WELL
                                      processed_pickle_fn=FILLED_EXAMPLES,
                                      replaced_token=replaced_token)
-    # occ_analyzer.run()
+    occ_analyzer.run()
 
     # Handle this temporarily since I haven't skipped those examples when running OccEmpty
+    '''
     if task_name == "multirc" or task_name == "esnli":
         skipped_list = skipped_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else skipped_indices[task_name]
         # kept_list = kept_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else kept_indices[task_name]
@@ -115,7 +116,7 @@ def run_occlusion(model_wrapper, task_name, analyzer, pickle_fn, replaced_token)
     # occ_evaluation.compute_auc_score("replacement", corr_pred_only=False)
     occ_evaluation.compute_auc_score(corr_pred_only=True)                   # AUC
     occ_evaluation.compute_auc_score("replacement", corr_pred_only=True)    # AUC_rep
-
+    '''
     # -----------------------------------------------------------------------------
     # FOR ROAR ONLY
     # -----------------------------------------------------------------------------
@@ -161,9 +162,10 @@ def run_input_marginalization(model_wrapper, task_name, analyzer, pickle_fn, thr
                                                          # FOR TESTING NEW EVALUATION METHOD --> IF USE, DISABLE RUN() AS WELL
                                                          processed_pickle_fn=FILLED_EXAMPLES,
                                                          threshold=threshold,)
-    # input_margin_analyzer.run()
+    input_margin_analyzer.run()
 
     # Handle this temporarily since I haven't skipped those examples when running
+    '''
     if task_name == "esnli":
         skipped_list = skipped_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else skipped_indices[task_name]
         # kept_list = kept_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else kept_indices[task_name]
@@ -175,7 +177,7 @@ def run_input_marginalization(model_wrapper, task_name, analyzer, pickle_fn, thr
     # input_margin_evaluation.compute_auc_score("replacement", corr_pred_only=False)
     input_margin_evaluation.compute_auc_score(corr_pred_only=True)                  # AUC
     input_margin_evaluation.compute_auc_score("replacement", corr_pred_only=True)   # AUC_rep
-
+    '''
     # -----------------------------------------------------------------------------
     # FOR ROAR ONLY
     # -----------------------------------------------------------------------------
@@ -284,7 +286,7 @@ def run_analyzers(threshold=10e-5):
     for i in range(model_wrapper.max_split):
 
         mode = "train" if model_wrapper.data_args.checkpoint.find("train") != -1 else "dev"
-        pickle_fn = "pickle_files/masked_examples_{}_{}_split{}.pickle".format(mode, task_name, i)
+        pickle_fn = "../data/pickle_files/masked_examples/masked_examples_{}_{}_split{}.pickle".format(mode, task_name, i)
         model_wrapper.split = i
         if model_wrapper.max_split == 1:
             pickle_fn = "pickle_files/masked_examples_{}_{}.pickle".format(mode, task_name)
