@@ -38,7 +38,7 @@
   <h3 align="center">Analysis of Attribution Methods</h3>
 
   <p align="center">
-    Paper: The drawbacks of explaining a text classifier's decisions using counterfactuals synthesized by masked language models
+    Pham, Bui, Mai, Nguyen (2021). Double Trouble: How to not explain a text classifier's decisions using counterfactuals synthesized by masked language models.
     <br />
     <br />
     <a href="https://github.com/anguyen8/im/issues">Report Bug</a>
@@ -79,8 +79,18 @@
 
 The project provides a rigorous evaluation using 5 metrics and 3 human-annotated datasets to better assess the attribution method Input Marginalization and compare with Leave-one-out - a simple yet strong baseline which remove a feature (i.e., token) by simply replacing it with an empty string.
 The source code was released for the following publication:
-* [The drawbacks of explaining a text classifier's decisions using counterfactuals synthesized by masked language models](https://arxiv.org) (preprint)
 
+This repository contains source code necessary to reproduce some of the main results in our paper.
+
+**If you use this software, please consider citing:**
+
+    @inproceedings{pham2021double,
+        title={Double Trouble: How to not explain a text classifier's decisions using counterfactuals synthesized by masked language models},
+        author={Thang Pham, Trung Bui, Long Mai, Anh Nguyen},
+        booktitle={arXiv pre-print},
+        year={2021}
+    }
+    
 <!-- GETTING STARTED -->
 
 ## Getting Started
