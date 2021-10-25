@@ -185,7 +185,7 @@ def process_esnli():
     print("Selected indices: {}".format(selected_indices))
     # ------------------------------------------------------------------------------------------------------------
 
-    pickle_fp = "../pickle_files/"
+    pickle_fp = "../../../data/pickle_files/human_annotations/"
     if not exists(pickle_fp):
         makedirs(pickle_fp)
 
@@ -239,8 +239,8 @@ def print_selected_examples():
 
 
 if __name__ == '__main__':
-    # process_esnli()
-    print_selected_examples()
+    process_esnli()
+    # print_selected_examples()
 
 '''
 ssh://thang@gpu4:22/home/thang/Softwares/anaconda3/envs/attribution_eval/bin/python -u /home/thang/Projects/attribution_eval/src/data_processor_esnli.py

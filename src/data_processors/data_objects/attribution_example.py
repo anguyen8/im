@@ -89,7 +89,12 @@ class AttrExample(object):
         return InputExample(text_a=self.get_text_a(), text_b=self.get_text_b(),
                             label=None if without_label else self.label, guid=self.guid)
 
+    # AUC & ROAR
     def get_input_example_for_deletion_method(self, del_flags):
+        '''
+        :param del_flags: boolean arrays to mark the word indices for REMOVING
+        :return: input_example used to make prediction (AUC) or training/eval (ROAR)
+        '''
         text_a = [token for idx, token in enumerate(self.text_a) if del_flags[:self.get_length_text_a()][idx]]
         text_b = [token for idx, token in enumerate(self.text_b) if del_flags[self.get_length_text_a():self.get_length()][idx]]
 
@@ -98,8 +103,14 @@ class AttrExample(object):
 
         return InputExample(text_a=text_a, text_b=text_b, label=self.label, guid=self.guid)
 
+    # ROAR-BERT
     def get_input_example_for_bert_based_deletion_method(self, model_wrapper, del_flags):
-        # IMPORTANT: Currently, this function is used for SST-2 task only
+        '''
+        IMPORTANT: Currently, this function is used for SST-2 task only
+        :param model_wrapper: is used to generate candidates for masked tokens
+        :param del_flags: boolean arrays to mark the word indices for REPLACING
+        :return: input_example used to train ROAR
+        '''
 
         masked_token = model_wrapper.mask_token
         text_a = [token.get_token() if del_flags[:self.get_length_text_a()][idx] else masked_token
@@ -112,7 +123,14 @@ class AttrExample(object):
 
         return InputExample(text_a=text_a, text_b=text_b, label=self.label, guid=self.guid)
 
+    # AUC_rep
     def get_input_example_for_replacement_method(self, model_wrapper, masked_idx):
+        '''
+        :param model_wrapper: is used to generate candidates for masked tokens
+        :param masked_idx: mask index to generate candidates
+        :return: input_example used to make prediction (AUC_rep)
+        '''
+
         masked_token = AttrToken(model_wrapper.mask_token)
 
         if masked_idx < len(self.text_a):
@@ -130,6 +148,8 @@ class AttrExample(object):
         # candidates[1] is a list of their corresponding likelihoods.
         for replaced_word in candidates[0]:
             if replaced_word != old_attr_token.get_token():
+                # Update top-1 or top-2 (if top-1 duplicated) for the masked token in text_a or text_b
+                # so that the later examples can use this word.
                 masked_token.set_token(replaced_word)
                 break
 

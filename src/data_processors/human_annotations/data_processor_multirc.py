@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
         input_file.close()
 
-    pickle_fp = "../pickle_files/"
+    pickle_fp = "../../../data/pickle_files/human_annotations/"
     if not exists(pickle_fp):
         makedirs(pickle_fp)
 

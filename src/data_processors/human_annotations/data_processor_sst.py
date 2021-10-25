@@ -116,95 +116,81 @@ def clarify_sst_and_sst2():
     print("The number of sentences / phrases / outliner of SST-2 = {} / {} / {}".format(sent_counter, phrase_counter, outliner))
 
 
-
-    # with open("../pickle_files/sst_preprocessed.pickle", "rb") as input_file:
-    #     processed_dataset = pickle.load(input_file)
-    #
-    # for example in tqdm(processed_dataset):
-    #     for phrase in example.phrases:
-    #         if example.text.lower() in sst2_examples:
-    #             # Sentence
-    #             pass
-    #         elif phrase.text.lower() in sst2_examples:
-    #             # Phrase
-    #             pass
-    # print("Positive = {}, Negative = {}, Neutral = {}".format(positive, negative, neutral))
-
-
 if __name__ == '__main__':
 
+    # For double check dataset
     # verify_sst2_label()
-    clarify_sst_and_sst2()
+    # clarify_sst_and_sst2()
 
-    # data_path = "../datasets/sst/stanfordSentimentTreebank/"
-    #
-    # sentences, phrases = [], []
-    # split_dict, sentiment_dict = {}, {}
-    #
-    # all_file_names = listdir(data_path)
-    # for file_name in all_file_names:
-    #     input_file = open(data_path + file_name, "r")
-    #     if file_name == "datasetSentences.txt":
-    #         next(input_file)  # Skip the first header row
-    #         for line in input_file:
-    #             sent_id, sent_text = line.strip().split("\t")
-    #             sentence = Sentence(id=sent_id, text=sent_text, score=-1)
-    #             sentences.append(sentence)
-    #
-    #     elif file_name == "dictionary.txt":
-    #         for line in input_file:
-    #             phrase_text, phrase_id = line.strip().split("|")
-    #             phrase = Phrase(id=phrase_id, text=phrase_text, score=-1)
-    #             phrases.append(phrase)
-    #
-    #     elif file_name == "datasetSplit.txt":
-    #         next(input_file)  # Skip the first header row
-    #         for line in input_file:
-    #             sent_id, split = line.strip().split(",")
-    #             split_dict[sent_id] = split
-    #
-    #     elif file_name == "sentiment_labels.txt":
-    #         next(input_file)  # Skip the first header row
-    #         for line in input_file:
-    #             phrase_id, sentiment_score = line.strip().split("|")
-    #             sentiment_dict[phrase_id] = sentiment_score
-    #
-    #     input_file.close()
-    #
-    # # Update split
-    # for sentence in sentences:
-    #     sentence.split = split_dict[sentence.id]
-    #
-    # # Update phrases' sentiment value
-    # for phrase in phrases:
-    #     phrase.score = sentiment_dict[phrase.id]
-    #
-    # # Sort list of phrases by descending in text's length
-    # phrases = sorted(phrases, key=lambda x: -len(x.text))
-    #
-    # number_of_sentences_assigned = 0
-    # number_of_phrases_assigned = 0
-    #
-    # for sentence in tqdm(sentences):
-    #     for phrase in phrases:
-    #         if phrase.text in sentence.text:
-    #             # Store all the phrases that belong to the sentence (including the sentence)
-    #             sentence.phrases.append(phrase)
-    #             number_of_phrases_assigned += 1
-    #
-    #             # Assign sentiment score for the sentence if they are identical
-    #             if phrase.text == sentence.text:
-    #                 sentence.score = phrase.score
-    #                 number_of_sentences_assigned += 1
-    #
-    # pickle_fp = "../pickle_files/"
-    # if not exists(pickle_fp):
-    #     makedirs(pickle_fp)
-    #
-    # with open(pickle_fp + "sst_preprocessed.pickle", "wb") as file_path:
-    #     pickle.dump(sentences, file_path)
-    #
-    # print("Complete! There are {} sentences and {} phrases assigned.".format(number_of_sentences_assigned, number_of_phrases_assigned))
+    data_path = "../datasets/sst/stanfordSentimentTreebank/"
+
+    sentences, phrases = [], []
+    split_dict, sentiment_dict = {}, {}
+
+    all_file_names = listdir(data_path)
+    for file_name in all_file_names:
+        input_file = open(data_path + file_name, "r")
+        if file_name == "datasetSentences.txt":
+            next(input_file)  # Skip the first header row
+            for line in input_file:
+                sent_id, sent_text = line.strip().split("\t")
+                sentence = Sentence(id=sent_id, text=sent_text, score=-1)
+                sentences.append(sentence)
+
+        elif file_name == "dictionary.txt":
+            for line in input_file:
+                phrase_text, phrase_id = line.strip().split("|")
+                phrase = Phrase(id=phrase_id, text=phrase_text, score=-1)
+                phrases.append(phrase)
+
+        elif file_name == "datasetSplit.txt":
+            next(input_file)  # Skip the first header row
+            for line in input_file:
+                sent_id, split = line.strip().split(",")
+                split_dict[sent_id] = split
+
+        elif file_name == "sentiment_labels.txt":
+            next(input_file)  # Skip the first header row
+            for line in input_file:
+                phrase_id, sentiment_score = line.strip().split("|")
+                sentiment_dict[phrase_id] = sentiment_score
+
+        input_file.close()
+
+    # Update split
+    for sentence in sentences:
+        sentence.split = split_dict[sentence.id]
+
+    # Update phrases' sentiment value
+    for phrase in phrases:
+        phrase.score = sentiment_dict[phrase.id]
+
+    # Sort list of phrases by descending in text's length
+    phrases = sorted(phrases, key=lambda x: -len(x.text))
+
+    number_of_sentences_assigned = 0
+    number_of_phrases_assigned = 0
+
+    for sentence in tqdm(sentences):
+        for phrase in phrases:
+            if phrase.text in sentence.text:
+                # Store all the phrases that belong to the sentence (including the sentence)
+                sentence.phrases.append(phrase)
+                number_of_phrases_assigned += 1
+
+                # Assign sentiment score for the sentence if they are identical
+                if phrase.text == sentence.text:
+                    sentence.score = phrase.score
+                    number_of_sentences_assigned += 1
+
+    pickle_fp = "../../../data/pickle_files/human_annotations/"
+    if not exists(pickle_fp):
+        makedirs(pickle_fp)
+
+    with open(pickle_fp + "sst_preprocessed.pickle", "wb") as file_path:
+        pickle.dump(sentences, file_path)
+
+    print("Complete! There are {} sentences and {} phrases assigned.".format(number_of_sentences_assigned, number_of_phrases_assigned))
 
 
 '''
