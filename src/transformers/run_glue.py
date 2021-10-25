@@ -135,45 +135,19 @@ def main():
         cache_dir=model_args.cache_dir,
     )
 
-    # ThangPM's NOTE 06-14-20
-    # is_synthetic = "shuffled_occluded"
-    # is_synthetic = "shuffled_only"
-    # is_synthetic = "occluded_only"
-    # is_synthetic = "data_augmentation"
-    # is_synthetic = ""
-
-    # is_synthetic = "attribution_only"
-    # data_args.attribution_train_dir = "../src/attribution_computation/global_softmax_100/2020-06-17_17-12-43_train/"
-    # data_args.attribution_eval_dir = "../src/attribution_computation/global_softmax_100/2020-06-17_10-13-36_dev/"
-    # data_args.attribution_method = "RIS"
-    # data_args.roar = 0.5
-
-    data_args.attribution_train_dir = "../src/ris_new/pickle_files/bert-base-uncased/SST-2/final_train/"
-    data_args.attribution_eval_dir  = "../src/ris_new/pickle_files/bert-base-uncased/SST-2/final_dev/"
-
     # Get datasets
     train_dataset = (
-        GlueDataset(data_args, tokenizer=tokenizer, cache_dir=model_args.cache_dir, do_train=training_args.do_train, seed=training_args.seed)
+        GlueDataset(data_args, tokenizer=tokenizer, cache_dir=model_args.cache_dir)
         if training_args.do_train
         else None
     )
     eval_dataset = (
-        GlueDataset(data_args, tokenizer=tokenizer, mode="dev", cache_dir=model_args.cache_dir,
-                    shuffle_data=data_args.shuffle_data,  # ThangPM's NOTE: For shuffled experiments
-                    shuffle_type=data_args.shuffle_type,  # ThangPM's NOTE: For shuffled experiments
-                    do_train=training_args.do_train,
-                    seed=training_args.seed)
-
+        GlueDataset(data_args, tokenizer=tokenizer, mode="dev", cache_dir=model_args.cache_dir)
         if training_args.do_eval
         else None
     )
     test_dataset = (
-        GlueDataset(data_args, tokenizer=tokenizer, mode="test", cache_dir=model_args.cache_dir,
-                    shuffle_data=data_args.shuffle_data,  # ThangPM's NOTE: For shuffled experiments
-                    shuffle_type=data_args.shuffle_type,  # ThangPM's NOTE: For shuffled experiments
-                    do_train=training_args.do_train,
-                    seed=training_args.seed)
-
+        GlueDataset(data_args, tokenizer=tokenizer, mode="test", cache_dir=model_args.cache_dir)
         if training_args.do_predict
         else None
     )
@@ -215,21 +189,13 @@ def main():
 
         # Loop to handle MNLI double evaluation (matched, mis-matched)
         eval_datasets = [eval_dataset]
-        # if data_args.task_name == "mnli":
-        #     mnli_mm_data_args = dataclasses.replace(data_args, task_name="mnli-mm")
-        #     mnli_mm_data_args.attribution_train_dir = ""
-        #     mnli_mm_data_args.attribution_eval_dir = ""
-        #     mnli_mm_data_args.roar = 0.5
-        #     eval_datasets.append(
-        #         GlueDataset(mnli_mm_data_args, tokenizer=tokenizer, mode="dev", cache_dir=model_args.cache_dir,
-        #                     shuffle_data=data_args.shuffle_data,  # ThangPM's NOTE: For shuffled experiments
-        #                     shuffle_type=data_args.shuffle_type,  # ThangPM's NOTE: For shuffled experiments
-        #                     do_train=training_args.do_train)
-        #     )
+        if data_args.task_name == "mnli":
+            mnli_mm_data_args = dataclasses.replace(data_args, task_name="mnli-mm")
+            eval_datasets.append(GlueDataset(mnli_mm_data_args, tokenizer=tokenizer, mode="dev", cache_dir=model_args.cache_dir))
 
         for eval_dataset in eval_datasets:
             trainer.compute_metrics = build_compute_metrics_fn(eval_dataset.args.task_name)
-            eval_result = trainer.evaluate(eval_dataset=eval_dataset, get_sent_embs=data_args.get_sent_embs, shuffle_type=data_args.shuffle_type) # ThangPM
+            eval_result = trainer.evaluate(eval_dataset=eval_dataset)
 
             output_eval_file = os.path.join(
                 training_args.output_dir, f"eval_results_{eval_dataset.args.task_name}.txt"
@@ -250,15 +216,7 @@ def main():
 
         if data_args.task_name == "mnli":
             mnli_mm_data_args = dataclasses.replace(data_args, task_name="mnli-mm")
-            mnli_mm_data_args.attribution_train_dir = ""
-            mnli_mm_data_args.attribution_eval_dir = ""
-            mnli_mm_data_args.roar = 0.5
-            test_datasets.append(
-                GlueDataset(mnli_mm_data_args, tokenizer=tokenizer, mode="test", cache_dir=model_args.cache_dir,
-                            shuffle_data=data_args.shuffle_data,  # ThangPM's NOTE: For shuffled experiments
-                            shuffle_type=data_args.shuffle_type,  # ThangPM's NOTE: For shuffled experiments
-                            do_train=training_args.do_train)
-            )
+            test_datasets.append(GlueDataset(mnli_mm_data_args, tokenizer=tokenizer, mode="test", cache_dir=model_args.cache_dir))
 
         for test_dataset in test_datasets:
             predictions = trainer.predict(test_dataset=test_dataset).predictions

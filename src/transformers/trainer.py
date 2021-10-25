@@ -26,13 +26,6 @@ from .optimization import AdamW, get_linear_schedule_with_warmup
 from .trainer_utils import PREFIX_CHECKPOINT_DIR, EvalPrediction, PredictionOutput, TrainOutput
 from .training_args import TrainingArguments, is_torch_tpu_available
 
-# ThangPM
-from scipy.special import softmax
-from src.data_processors.data_objects.ml_object import ML_Object
-import pickle
-from os import makedirs
-from os.path import exists
-
 try:
     from apex import amp
 
@@ -223,7 +216,7 @@ class Trainer:
             )
         set_seed(self.args.seed)
         # Create output directory if needed
-        if self.is_world_master():
+        if self.is_world_master() and self.args.output_dir:
             os.makedirs(self.args.output_dir, exist_ok=True)
         if is_torch_tpu_available():
             # Set an xla_device flag on the model's config.
@@ -505,7 +498,7 @@ class Trainer:
 
                     if (self.args.logging_steps > 0 and self.global_step % self.args.logging_steps == 0) or \
                        (self.global_step == 1 and self.args.logging_first_step) or \
-                       (self.global_step == t_total): # ThangPM's NOTE: Print out training loss for the last epoch
+                       (self.global_step == t_total):   # ThangPM's NOTE: Print out training loss for the last epoch
 
                         logs: Dict[str, float] = {}
                         logs["loss"] = (tr_loss - logging_loss) / self.args.logging_steps
@@ -704,9 +697,6 @@ class Trainer:
 
     def evaluate(
         self, eval_dataset: Optional[Dataset] = None, prediction_loss_only: Optional[bool] = None,
-            get_sent_embs: Optional[bool] = False,      # ThangPM
-            get_attentions: Optional[bool] = False,     # ThangPM
-            shuffle_type: Optional[str] = "",           # ThangPM
     ) -> Dict[str, float]:
         """
         Run evaluation and return metrics.
@@ -724,7 +714,7 @@ class Trainer:
         """
         eval_dataloader = self.get_eval_dataloader(eval_dataset)
 
-        output = self._prediction_loop(eval_dataloader, description="Evaluation", get_sent_embs=get_sent_embs, shuffle_type=shuffle_type) # ThangPM
+        output = self._prediction_loop(eval_dataloader, description="Evaluation")
 
         self._log(output.metrics)
 
@@ -734,10 +724,7 @@ class Trainer:
 
         return output.metrics
 
-    def predict(self, test_dataset: Dataset,
-                get_sent_embs: Optional[bool] = False, # ThangPM
-                get_attentions: Optional[bool] = False,  # ThangPM
-                ) -> PredictionOutput:
+    def predict(self, test_dataset: Dataset,) -> PredictionOutput:
         """
         Run prediction and return predictions and potential metrics.
 
@@ -746,13 +733,10 @@ class Trainer:
         """
         test_dataloader = self.get_test_dataloader(test_dataset)
 
-        return self._prediction_loop(test_dataloader, description="Prediction", get_sent_embs=get_sent_embs, get_attentions=get_attentions)
+        return self._prediction_loop(test_dataloader, description="Prediction")
 
     def _prediction_loop(
         self, dataloader: DataLoader, description: str, prediction_loss_only: Optional[bool] = None,
-            get_sent_embs: Optional[bool] = False,      # ThangPM
-            get_attentions: Optional[bool] = False,     # ThangPM
-            shuffle_type: Optional[str] = "",           # ThangPM
     ) -> PredictionOutput:
         """
         Prediction/evaluation loop, shared by `evaluate()` and `predict()`.
@@ -783,23 +767,11 @@ class Trainer:
         if is_torch_tpu_available():
             dataloader = pl.ParallelLoader(dataloader, [self.args.device]).per_device_loader(self.args.device)
 
-        # ThangPM
-        all_sent_embs = []
-        all_input_ids = []
-        all_attentions = []
-
         for inputs in tqdm(dataloader, desc=description):
             has_labels = any(inputs.get(k) is not None for k in ["labels", "lm_labels", "masked_lm_labels"])
 
             for k, v in inputs.items():
                 inputs[k] = v.to(self.args.device)
-
-            # ------------ ThangPM ------------
-            if get_sent_embs:
-                inputs["get_sent_embs"] = True
-                inputs["output_attentions"] = True # To get attention weights
-                all_input_ids.extend(inputs["input_ids"].cpu().detach().numpy())
-            # ---------------------------------
 
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -808,25 +780,6 @@ class Trainer:
                     eval_losses += [step_eval_loss.mean().item()]
                 else:
                     logits = outputs[0]
-
-                # ------------ ThangPM ------------
-                # List of sentence embeddings will be at the last
-                if get_sent_embs:
-                    sent_embs = outputs[-1]
-                    all_sent_embs.extend(sent_embs.cpu().detach().numpy())
-
-                    # DISABLE ATTENTION FEATURES IF NECESSARY FOR MEMORY SAVING
-                    if get_attentions:
-                        attentions = list(outputs[-2]) # Convert tuple to list of tensors
-                        attentions = [attention.cpu().detach().numpy() for attention in attentions]
-
-                        for idx in range(len(inputs['input_ids'])):
-                            attentions_per_example = []
-                            for layer in attentions:
-                                attentions_per_example.append(layer[idx])
-
-                            all_attentions.append(np.array(attentions_per_example))
-                # ---------------------------------
 
             if not prediction_loss_only:
                 if preds is None:
@@ -853,20 +806,11 @@ class Trainer:
                 label_ids = xm.mesh_reduce("eval_label_ids", label_ids, torch.cat)
 
         # Finally, turn the aggregated tensors into numpy arrays.
-        predicted_labels, preds_confidence, gold_labels = [], [], []
-
         if preds is not None:
             preds = preds.cpu().numpy()
-            if preds.shape[1] > 1: # Classification
-                predicted_labels = np.argmax(preds, axis=-1) # ThangPM
-                preds_confidence = softmax(preds, axis=-1) # ThangPM
-            else: # Regression
-                predicted_labels = preds[:,0]  # ThangPM
-                preds_confidence = preds[:,0]  # ThangPM
 
         if label_ids is not None:
             label_ids = label_ids.cpu().numpy()
-            gold_labels = label_ids
 
         if self.compute_metrics is not None and preds is not None and label_ids is not None:
             metrics = self.compute_metrics(EvalPrediction(predictions=preds, label_ids=label_ids))
@@ -880,41 +824,7 @@ class Trainer:
             if not key.startswith("eval_"):
                 metrics[f"eval_{key}"] = metrics.pop(key)
 
-        # ThangPM is here
-        # Construct `all_tokens` list
-        all_tokens = []
-        all_guids = []
-        for example in dataloader.dataset.examples:
-            tokens = {}
-            tokens["text_a"] = example.text_a.split(" ")
-            tokens["text_b"] = example.text_b.split(" ") if example.text_b != None and example.text_b != "" else ""
-            all_tokens.append(tokens)
-            all_guids.append(example.guid)
-        # ------------------------------------------------------------------------------------------------------
-        ml_objects = []
-
-        if get_sent_embs:
-            # gold_labels, predicted_labels = labels
-            if len(gold_labels) == 0:
-                gold_labels = [None] * len(predicted_labels)
-            if len(all_attentions) == 0:
-                all_attentions = [None] * len(predicted_labels)
-
-            for guid, tokens, input_ids, sentence_representation, self_attention_weights, confidence_score, pred_label, ground_truth in \
-                    zip(all_guids, all_tokens, all_input_ids, all_sent_embs, all_attentions, preds_confidence, list(predicted_labels), list(gold_labels)):
-
-                ml_object = ML_Object(guid, tokens, input_ids, sentence_representation, self_attention_weights, confidence_score, pred_label, ground_truth)
-                ml_objects.append(ml_object)
-
-            if not exists(self.args.output_dir):
-                makedirs(self.args.output_dir)
-
-            stored_fn = self.args.output_dir + "/" + "ml_objects.pickle"
-            with open(stored_fn, "wb") as file_path:
-                pickle.dump(ml_objects, file_path)
-        # ------------------------------------------------------------------------------------------------------
-
-        return PredictionOutput(predictions=preds, label_ids=label_ids, metrics=metrics, ml_objects=ml_objects)
+        return PredictionOutput(predictions=preds, label_ids=label_ids, metrics=metrics)
 
     def predict_masked_lm(self, test_dataset: Dataset) -> PredictionOutput:
         """

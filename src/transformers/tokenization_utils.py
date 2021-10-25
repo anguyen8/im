@@ -1803,7 +1803,7 @@ class PreTrainedTokenizer(SpecialTokensMixin):
 
         input_ids = []
         from tqdm import tqdm  # ThangPM
-        for ids_or_pair_ids in tqdm(batch_text_or_text_pairs): # ThangPM
+        for ids_or_pair_ids in batch_text_or_text_pairs: # ThangPM
             if isinstance(ids_or_pair_ids, (list, tuple)) and len(ids_or_pair_ids) == 2 and not is_pretokenized:
                 ids, pair_ids = ids_or_pair_ids
             else:
@@ -1827,7 +1827,7 @@ class PreTrainedTokenizer(SpecialTokensMixin):
             max_length = max([total_sequence_length(ids) for ids in input_ids])
 
         batch_outputs = {}
-        for first_ids, second_ids in tqdm(input_ids): # ThangPM
+        for first_ids, second_ids in input_ids: # ThangPM
             # Prepares a sequence of input id, or a pair of sequences of inputs ids so that it can be used by
             # the model. It adds special tokens, truncates sequences if overflowing while taking into account
             # the special tokens and manages a window stride for overflowing tokens

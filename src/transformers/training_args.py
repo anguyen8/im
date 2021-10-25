@@ -41,6 +41,7 @@ class TrainingArguments:
     """
 
     output_dir: str = field(
+        default="",
         metadata={"help": "The output directory where the model predictions and checkpoints will be written."}
     )
     overwrite_output_dir: bool = field(

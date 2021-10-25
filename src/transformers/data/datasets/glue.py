@@ -44,33 +44,22 @@ class GlueDataTrainingArguments:
     )
 
     # ThangPM
-    shuffle_data: bool = field(
-        default=False, metadata={"help": "Shuffle dev set when evaluation"}
-    )
+    model_base: str = field(default="", metadata={"help": "Model base (e.g., bert-base-uncased, roberta-base)"})
+    masked_lm: str = field(default="", metadata={"help": "Masked language models for running analyzers (e.g., bert-base-uncased, roberta-base)"})
+    analyzer: str = field(default="", metadata={"help": "Analyzers (e.g., RIS, OccEmpty, OccZero)"})
+    sst_flag: bool = field(default=False, metadata={"help": "Specify SST task when necessary since task_name is set to SST-2"})
+    checkpoint: str = field(default="", metadata={"help": "Specify a checkpoint i.e. output folder for attribution methods"})
+    eval_metric: str = field(default="auc", metadata={"help": "Specify a metric used to evaluate IM and LOO_empty ['auc', 'auc_bert', 'roar', 'roar_bert', 'human_highlights']"})
+    overwrite_results: bool = field(default=False, metadata={"help": "Overwrite cache and re-compute attribution scores"})
 
-    shuffle_type: str = field(
-        default="", metadata={"help": "Specify shuffle type in [unigram, bigram, trigram]"})
-        # default="shuffled", metadata={"help": "Specify shuffle type in [unigram, bigram, trigram]"})
+    roar: bool = field(default=False, metadata={"help": "Use this flag for ROAR"})
+    attribution_train_dir: str = field(default="", metadata={"help": "Provide a path to modified examples for re-training with ROAR"})
+    attribution_eval_dir: str = field(default="", metadata={"help": "Provide a path to modified examples for evaluation with ROAR"})
+    roar_settings: str = field(default="", metadata={"help": "Specify settings (e.g., attribution method, deletion rate) for ROAR"})
+    roar_type: str = field(default="vanilla", metadata={"help": "Specify ROAR type in ['vanilla', 'vanilla_baseline', 'bert', 'bert_baseline']"})
 
-    get_sent_embs: bool = field(
-        default=False, metadata={"help": "Ask model to obtain and store sentence embeddings"}
-    )
-
-    shuffle_dir: str = field(
-        default="", metadata={"help": "Specify shuffle data directory for loading"})
-
-    model_base: str = field(
-        default="", metadata={"help": "Model base (e.g., bert-base-uncased, roberta-base)"})
-
-    masked_lm: str = field(
-        default="", metadata={"help": "Masked language models for running analyzers (e.g., bert-base-uncased, RoBERTa)"})
-
-    analyzer: str = field(
-        default="", metadata={"help": "Analyzers (e.g., RIS, OccEmpty, OccZero)"})
-
-    checkpoint: str = field(
-        default="", metadata={"help": "Finetuned model at specific checkpoint"})
-
+    sanity_check: bool = field(default=False, metadata={"help": "Run sanity check"})
+    reproduce_im: bool = field(default=False, metadata={"help": "Reproduce SST-2 results under AUC and AUC_rep metrics for 700 randomly-selected examples from correctly-predicted ones"})
 
     def __post_init__(self):
         self.task_name = self.task_name.lower()
@@ -101,10 +90,6 @@ class GlueDataset(Dataset):
         mode: Union[str, Split]=Split.train,
         cache_dir: Optional[str]=None,
         examples=None,
-        shuffle_data=False,
-        shuffle_type="shuffled",
-        do_train=False,
-        seed=42,
     ):
         self.args = args
         self.processor = glue_processors[args.task_name]()
@@ -117,9 +102,7 @@ class GlueDataset(Dataset):
         # Load data features from cache or dataset file
         cached_features_file = os.path.join(
             cache_dir if cache_dir is not None else args.data_dir,
-            "cached_{}_{}_{}_{}".format(
-                mode.value, tokenizer.__class__.__name__, str(args.max_seq_length), args.task_name, #+ "-mm"
-            ),
+            "cached_{}_{}_{}_{}".format(mode.value, tokenizer.__class__.__name__, str(args.max_seq_length), args.task_name),
         )
 
         label_list = self.processor.get_labels()
@@ -137,10 +120,6 @@ class GlueDataset(Dataset):
         lock_path = cached_features_file + ".lock"
         with FileLock(lock_path):
 
-            # ThangPM's NOTES 06-14-20
-            if shuffle_data:
-                cached_features_file += "_" + shuffle_type
-
             if os.path.exists(cached_features_file) and not args.overwrite_cache:
                 start = time.time()
                 self.features = torch.load(cached_features_file)
@@ -148,37 +127,35 @@ class GlueDataset(Dataset):
             else:
                 logger.info(f"Creating features from dataset file at {args.data_dir}")
 
-                # FOR ROAR ONLY
-                # ThangPM: 03/03/2021
-                # attr_type, roar_rate = args.shuffle_dir.split("/")
-
                 if examples is None:
                     if mode == Split.dev:
                         self.examples = self.processor.get_dev_examples(args.data_dir)
-                        self.attribution_dir = args.attribution_eval_dir if hasattr(args, 'attribution_eval_dir') else None
+                        self.attribution_dir = args.attribution_eval_dir
                     elif mode == Split.test:
                         self.examples = self.processor.get_test_examples(args.data_dir)
                     else:
-                        # IMPORTANT: MUST ROLL BACK AFTER EXPERIMENT
                         self.examples = self.processor.get_train_examples(args.data_dir)
-                        # self.examples = self.processor.get_dev_examples(args.data_dir)
-                        self.attribution_dir = args.attribution_train_dir if hasattr(args, 'attribution_train_dir') else None
+                        self.attribution_dir = args.attribution_train_dir
                 else:
                     self.examples = examples
 
                 if limit_length is not None:
                     self.examples = self.examples[:limit_length]
 
-                # FOR ROAR ONLY
-                '''
-                import pickle
-                from os.path import exists
-                postfix = ""   # in ["", "_baseline", "_use_bert", "_use_bert_baseline"]
-                lite_pickle_fb = self.attribution_dir + attr_type + "/vanilla_roar_examples/" + "del_examples_" + roar_rate + postfix + ".pickle"
-                print("********** LOADING PICKLE FILE: " + lite_pickle_fb)
-                with open(lite_pickle_fb, "rb") as file_path:
-                    self.examples = pickle.load(file_path)
-                '''
+                # ------------------------------------------------------------------------------------------
+                # ThangPM: For ROAR
+                # Load examples for re-training and evaluating models
+                # ------------------------------------------------------------------------------------------
+                if args.roar:
+                    import pickle
+                    attr_method, roar_rate = args.roar_settings.split("/")
+                    lite_pickle_fb = self.attribution_dir + attr_method + "/" + \
+                                     "del_examples_" + roar_rate + "_" + args.roar_type + ".pickle"
+
+                    print("********** LOADING PICKLE FILE: " + lite_pickle_fb)
+                    with open(lite_pickle_fb, "rb") as file_path:
+                        self.examples = pickle.load(file_path)
+                # ------------------------------------------------------------------------------------------
 
                 self.features = glue_convert_examples_to_features(
                     self.examples,
@@ -190,9 +167,7 @@ class GlueDataset(Dataset):
                 start = time.time()
 
                 # ^ This seems to take a lot of time so I want to investigate why and how we can improve.
-                logger.info(
-                    "Saving features into cached file %s [took %.3f s]", cached_features_file, time.time() - start
-                )
+                logger.info("Saving features into cached file %s [took %.3f s]", cached_features_file, time.time() - start)
 
             # To print out the distribution of dataset regarding gold labels
             distribution_dict = {}

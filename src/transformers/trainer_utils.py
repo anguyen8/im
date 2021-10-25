@@ -17,7 +17,6 @@ class PredictionOutput(NamedTuple):
     predictions: np.ndarray
     label_ids: Optional[np.ndarray]
     metrics: Optional[Dict[str, float]]
-    ml_objects: Optional[List] # ThangPM
 
 
 class TrainOutput(NamedTuple):
