@@ -17,13 +17,15 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
+
+<!--
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
-
+-->
 
 
 <!-- PROJECT LOGO -->
@@ -112,40 +114,51 @@ The source code was released for the following publication:
 
 ## Usage
 
-###(in-progress with roadmap below)
+### (in-progress with roadmap below)
 
-- Prepare masked examples for SST-2, SST, e-SNLI and MultiRC datasets.
+- Generate masked examples for SST-2, SST, e-SNLI and MultiRC datasets.
+- Pre-process human highlights for SST, e-SNLI and MultiRC.
 - Run attribution methods reported in our paper: 
   
-    Note: Replace TASK_NAME with one of the following tasks: `SST-2`, `SST`, `ESNLI`, `MultiRC`.
+    Notes: 
+    - Replace `TASK_NAME` with one of the following tasks: `SST-2`, `SST`, `ESNLI`, `MultiRC`.
+    - Replace `METRIC` with one of the following tasks: `auc`, `auc_bert`, `roar`, `roar_bert`, `human_highlights`.
     
     - Input Marginalization (IM)
       ```sh
-      bash script/run_analyzers.sh TASK_NAME InputMargin
+      bash script/run_analyzers.sh TASK_NAME METRIC InputMargin
       ```
     - Leave One Out variants: LOO<sub>empty</sub>, LOO<sub>unk</sub>, LOO<sub>zero</sub>
       ```sh
-      bash script/run_analyzers.sh TASK_NAME OccEmpty
-      bash script/run_analyzers.sh TASK_NAME OccUnk
-      bash script/run_analyzers.sh TASK_NAME OccZero
+      bash script/run_analyzers.sh TASK_NAME METRIC OccEmpty
+      bash script/run_analyzers.sh TASK_NAME METRIC OccUnk
+      bash script/run_analyzers.sh TASK_NAME METRIC OccZero
       ```
     - LIME and LIME<sub>BERT</sub>
       ```sh
-      bash script/run_analyzers.sh TASK_NAME LIME
-      bash script/run_analyzers.sh TASK_NAME LIME-BERT  
+      bash script/run_analyzers.sh TASK_NAME METRIC LIME
+      bash script/run_analyzers.sh TASK_NAME METRIC LIME-BERT
       ``` 
-- [x] Evaluation
-    - [] Deletion and BERT-based Deletion (AUC vs. AUC<sub>rep</sub>)
-    - [] RemOve And Retrain (ROAR)
-    - [] Agreement with human-annotated highlights
-    - [] Sanity check
-- [] Visualization for attribution maps
-    - [] Binary
-    - [] Real-valued
-- [x] Analysis of attribution maps
+- Evaluation
+    - Deletion and BERT-based Deletion (AUC vs. AUC<sub>rep</sub>)
+    - RemOve And Retrain (ROAR)
+    - Agreement with human-annotated highlights
+    - Sanity check
+- Visualization for attribution maps (binary & real-valued)
+  ```sh
+  python run_demo.py --text_a "A group of people prepare hot air balloons for takeoff ." 
+                     --text_b "A group of people prepare cars for racing ."
+                     --classifier "ESNLI"
+  ```
+
+[![ESNLI example][project-example-esnli]]()
+
+<!--
+- [] Analysis of attribution maps
     - [] Out-of-distribution issue (Sec. 5.1)
     - [] BERT often replaces a word by itself (Sec. 5.2)
     - [] Attribution magnitude (Sec. 5.2)
+-->
 
 See the [open issues](https://github.com/anguyen8/im/issues) for a full list of proposed features (and
 known issues).
@@ -153,6 +166,7 @@ known issues).
 
 <!-- CONTRIBUTING -->
 
+<!--
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any
@@ -166,7 +180,7 @@ simply open an issue with the tag "enhancement". Don't forget to give the projec
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
-
+-->
 
 <!-- LICENSE -->
 
@@ -211,3 +225,4 @@ Project Link: [https://github.com/anguyen8/im](https://github.com/anguyen8/im)
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/thangpm
 [product-screenshot]: images/screenshot.png
+[project-example-esnli]: images/example_esnli.png
