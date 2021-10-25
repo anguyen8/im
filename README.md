@@ -1,4 +1,5 @@
 <div id="top"></div>
+
 <!--
 *** Thanks for checking out the Best-README-Template. If you have a suggestion
 *** that would make this better, please fork the repo and create a pull request
@@ -30,12 +31,14 @@
 
 <!-- PROJECT LOGO -->
 <br />
+
 <div align="center">
   <!--
   <a href="https://github.com/anguyen8/im">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
   -->
+
 
   <h3 align="center">Analysis of Attribution Methods</h3>
 
@@ -47,11 +50,13 @@
     ·
     <a href="https://github.com/anguyen8/im/issues">Request Feature</a>
   </p>
+
 </div>
 
 
 
 <!-- TABLE OF CONTENTS -->
+
 <details>
   <summary>Table of Contents</summary>
   <ol>
@@ -74,6 +79,7 @@
 
 
 
+
 <!-- ABOUT THE PROJECT -->
 
 ## About The Project
@@ -91,7 +97,7 @@ This repository contains source code necessary to reproduce some of the main res
         booktitle={arXiv pre-print},
         year={2021}
     }
-    
+
 <!-- GETTING STARTED -->
 
 ## Getting Started
@@ -105,15 +111,20 @@ This repository contains source code necessary to reproduce some of the main res
 ### Installation
 
 1. Clone the repo
+
    ```sh
    git clone https://github.com/anguyen8/im.git
    ```
+
 2. Create and activate a Conda environment
+
    ```sh
    conda create -n im python=3.9
    conda activate im
    ```
+
 3. Install required libraries
+
    ```sh
    pip install -r requirements.txt
    ```
@@ -123,35 +134,67 @@ This repository contains source code necessary to reproduce some of the main res
 
 ## Usage
 
-- Generate masked examples for SST-2, SST, e-SNLI and MultiRC datasets.
-- Pre-process human highlights for SST, e-SNLI and MultiRC.
-- Run attribution methods reported in our paper: 
-  
-    Notes: 
-    - Replace `TASK_NAME` with one of the following tasks: `SST-2`, `SST`, `ESNLI`, `MultiRC`.
-    - Replace `METRIC` with one of the following tasks: `auc`, `auc_bert`, `roar`, `roar_bert`, `human_highlights`.
-    
-    - Input Marginalization (IM)
-      ```sh
-      bash script/run_analyzers.sh TASK_NAME METRIC InputMargin
-      ```
-    - Leave One Out variants: LOO<sub>empty</sub>, LOO<sub>unk</sub>, LOO<sub>zero</sub>
-      ```sh
-      bash script/run_analyzers.sh TASK_NAME METRIC OccEmpty
-      bash script/run_analyzers.sh TASK_NAME METRIC OccUnk
-      bash script/run_analyzers.sh TASK_NAME METRIC OccZero
-      ```
-    - LIME and LIME<sub>BERT</sub>
-      ```sh
-      bash script/run_analyzers.sh TASK_NAME METRIC LIME
-      bash script/run_analyzers.sh TASK_NAME METRIC LIME-BERT
-      ``` 
+### 1. Reproduce the quantitative results
+
+**Summary** of the features provided (out-of-the-box):
+
+* BERT-based classifiers pre-trained on SST-2, e-SNLI, and MultiRC
+* Generate intermediate masked text (i.e. with MASK) for `LOO` and `IM` (which needs another step to replace the MASK with BERT suggestions in order to generate counterfactuals). 
+  * We also provide a _pre-computed_ pickle file of these intermediate masked examples [here](https://drive.google.com/drive/folders/17YpPgUerL_I-smN6Wy2ok4Kuu7fn6ZTx).
+* Run attribution methods 
+  * (`LOOEmpty`, `LOOUnk` `LOOZero`, `IM`) on `SST-2`, `SST`, `ESNLI`, `MultiRC` datasets.
+  * (`LIME`, `LIME-BERT`) on `SST` dataset.
+* Evaluate the generated attribution maps (by one of the above methods) using one of the following quantitative metrics: `auc`, `auc_bert`, `roar`, `roar_bert`, `human_highlights`.
+  * We provide the pre-processed and quality-controlled human highlights used in the paper (download [here](https://drive.google.com/drive/folders/17iKO0WRCVo_8nd3xz3hcvL310huxml78?usp=sharing)).
+
+
+
+Run the following turn-key script to generate quantitative results
+
+```sh
+bash script/run_analyzers.sh TASK_NAME METRIC InputMargin
+```
+
+EDITING HERE
+
+
+
+- Notes: 
+
+  - Replace `TASK_NAME` with one of the following tasks: `SST-2`, `SST`, `ESNLI`, `MultiRC`.
+
+  - Replace `METRIC` with one of the following tasks: `auc`, `auc_bert`, `roar`, `roar_bert`, `human_highlights`.
+
+  - Input Marginalization (IM)
+
+    ```sh
+    bash script/run_analyzers.sh TASK_NAME METRIC InputMargin
+    ```
+
+  - Leave One Out variants: LOO<sub>empty</sub>, LOO<sub>unk</sub>, LOO<sub>zero</sub>
+
+    ```sh
+    bash script/run_analyzers.sh TASK_NAME METRIC OccEmpty
+    bash script/run_analyzers.sh TASK_NAME METRIC OccUnk
+    bash script/run_analyzers.sh TASK_NAME METRIC OccZero
+    ```
+
+  - LIME and LIME<sub>BERT</sub>
+
+    ```sh
+    bash script/run_analyzers.sh TASK_NAME METRIC LIME
+    bash script/run_analyzers.sh TASK_NAME METRIC LIME-BERT
+    ```
+
 - Evaluation
-    - Deletion and BERT-based Deletion (AUC vs. AUC<sub>rep</sub>)
-    - RemOve And Retrain (ROAR)
-    - Agreement with human-annotated highlights
-    - Sanity check
+
+  - Deletion and BERT-based Deletion (AUC vs. AUC<sub>rep</sub>)
+  - RemOve And Retrain (ROAR)
+  - Agreement with human-annotated highlights
+  - Sanity check
+
 - Visualization for attribution maps (binary & real-valued)
+
   ```sh
   python run_demo.py --text_a "Two men dressed in black practicing martial arts on a gym floor ." 
                      --text_b "Two men are doing martial arts ."
@@ -161,11 +204,12 @@ This repository contains source code necessary to reproduce some of the main res
 [![ESNLI example][project-example-esnli]](https://github.com/anguyen8/im/)
 
 <!--
+
 - [] Analysis of attribution maps
-    - [] Out-of-distribution issue (Sec. 5.1)
-    - [] BERT often replaces a word by itself (Sec. 5.2)
-    - [] Attribution magnitude (Sec. 5.2)
--->
+  - [] Out-of-distribution issue (Sec. 5.1)
+  - [] BERT often replaces a word by itself (Sec. 5.2)
+  - [] Attribution magnitude (Sec. 5.2)
+    -->
 
 See the [open issues](https://github.com/anguyen8/im/issues) for a full list of proposed features (and
 known issues).
@@ -174,6 +218,7 @@ known issues).
 <!-- CONTRIBUTING -->
 
 <!--
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any
@@ -187,7 +232,7 @@ simply open an issue with the tag "enhancement". Don't forget to give the projec
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
--->
+   -->
 
 <!-- LICENSE -->
 
@@ -210,7 +255,7 @@ Project Link: [https://github.com/anguyen8/im](https://github.com/anguyen8/im)
 ## Acknowledgments
 
 * [Huggingface's Transformers](https://huggingface.co/transformers/)
-  
+
 * [LIME for NLP](https://github.com/marcotcr/lime)
 
 * [Best README template by Othneil Drew](https://github.com/othneildrew/Best-README-Template#about-the-project)
@@ -219,6 +264,7 @@ Project Link: [https://github.com/anguyen8/im](https://github.com/anguyen8/im)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+
 [contributors-shield]: https://img.shields.io/github/contributors/anguyen8/im.svg?style=for-the-badge
 [contributors-url]: https://github.com/anguyen8/im/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/anguyen8/im.svg?style=for-the-badge
