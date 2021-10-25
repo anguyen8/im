@@ -16,3 +16,4 @@ tensorboard
 ipython
 absl-py
 wrapt
+datasets
