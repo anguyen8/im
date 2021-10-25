@@ -66,7 +66,6 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
-    <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
@@ -124,8 +123,6 @@ This repository contains source code necessary to reproduce some of the main res
 
 ## Usage
 
-### (in-progress with roadmap below)
-
 - Generate masked examples for SST-2, SST, e-SNLI and MultiRC datasets.
 - Pre-process human highlights for SST, e-SNLI and MultiRC.
 - Run attribution methods reported in our paper: 
@@ -161,7 +158,7 @@ This repository contains source code necessary to reproduce some of the main res
                      --classifier "ESNLI"
   ```
 
-[![ESNLI example][project-example-esnli]]()
+[![ESNLI example][project-example-esnli]](https://github.com/anguyen8/im/)
 
 <!--
 - [] Analysis of attribution maps
