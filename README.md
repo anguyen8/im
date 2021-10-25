@@ -153,8 +153,8 @@ This repository contains source code necessary to reproduce some of the main res
     - Sanity check
 - Visualization for attribution maps (binary & real-valued)
   ```sh
-  python run_demo.py --text_a "A group of people prepare hot air balloons for takeoff ." 
-                     --text_b "A group of people prepare cars for racing ."
+  python run_demo.py --text_a "Two men dressed in black practicing martial arts on a gym floor ." 
+                     --text_b "Two men are doing martial arts ."
                      --classifier "ESNLI"
   ```
 
