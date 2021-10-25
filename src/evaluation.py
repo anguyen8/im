@@ -93,6 +93,7 @@ class Evaluation(object):
             # Number of input-removed examples (including original input example)
             self.chunk_size_list.append(deletion_level + 1)
 
+    # ROAR and ROAR_BERT
     def generate_examples_for_roar(self, prefix, suffix, del_rate=0.2, use_bert=False, random_baseline=False):
         self.del_examples = []
 
@@ -125,7 +126,10 @@ class Evaluation(object):
 
             self.del_examples.append(del_input_example)
 
-        lite_pickle_fb = prefix + "del_examples_" + str(del_rate) + ("_use_bert" if use_bert else "") + ("_baseline" if random_baseline else "") + suffix
+        lite_pickle_fb = prefix + "/roar_examples/" + "del_examples_" + str(del_rate) + \
+                         ("_bert" if use_bert else "_vanilla") + \
+                         ("_baseline" if random_baseline else "") + suffix
+
         with open(lite_pickle_fb, "wb") as file_path:
             pickle.dump(self.del_examples, file_path)
 
@@ -158,9 +162,6 @@ class Evaluation(object):
             ori_pred = np.argmax(conf_scores[0])
 
             # Prediction of original example when evaluation and analyzing must be the same
-            # assert ori_pred == self.model_wrapper.labels.index(self.del_examples[start].label)
-            # assert ori_pred == self.dev_set[idx]["ori_example"].get_pred_label()
-
             if ori_pred != self.dev_set[idx]["ori_example"].get_pred_label():
                 count += 1
 
@@ -173,8 +174,11 @@ class Evaluation(object):
                 auc_score = auc(x, y_pred)
                 auc_scores.append(auc_score)
 
-        # auc_scores = random.sample(auc_scores, 700)
-        print("Evaluation metric: " + ("AUC" if method=="LOO" else "AUC_rep"))
+        # In Kim's paper, the authors randomly selected 700 correctly predicted examples for evaluation
+        if self.model_wrapper.data_args.reproduce_im:
+            auc_scores = random.sample(auc_scores, 700)
+
+        print("Evaluation metric: " + ("AUC" if method == "LOO" else "AUC_rep"))
         print("Average AUC score = " + str(statistics.mean(auc_scores)))
         print("Number of examples: " + str(len(auc_scores)))
         print("Number of examples changing predictions: " + str(count))
@@ -184,11 +188,9 @@ class Evaluation(object):
     def compute_IoU_score(self, analyzer, groundtruth_sets, alpha=0.05, visualize=False):
 
         def intersection(lst1, lst2):
-            # return list(set(lst1) & set(lst2))
             return list((Counter(lst1) & Counter(lst2)).elements())
 
         def union(lst1, lst2):
-            # return list(set().union(lst1, lst2))
             return list((Counter(lst1) | Counter(lst2)).elements())
 
         def compute_scores(sets_1, sets_2):
@@ -226,19 +228,21 @@ class Evaluation(object):
         sets_0, sets_1, sets_2 = [], [], []
         gt_dev_set = [sent for sent in groundtruth_sets if str(sent.split) == '3']   # split = 3 for dev set
 
+        task_name = self.model_wrapper.data_args.task_name
+
+        # Since SST-2 model is used for SST task, we need to convert it to SST-2 for loading model first and then
+        # changing it back to SST task below if the flag is on.
+        if task_name == "sst-2" and self.model_wrapper.data_args.sst_flag:
+            task_name = "sst"
+
         # Skip examples whose lengths after tokenization >= 512 (For MultiRC, max_length of BertMLM = 512)
         # Handle this since gt_dev_set ALWAYS has full examples per split
-        task_name = self.model_wrapper.data_args.task_name if self.model_wrapper.data_args.task_name != "sst-2" else "sst"
         skipped_list = skipped_indices[task_name + "_split{}".format(self.model_wrapper.split)] if self.model_wrapper.max_split > 1 else skipped_indices[task_name]
         gt_dev_set = [example for idx, example in enumerate(gt_dev_set) if idx not in skipped_list]
 
-        # USE ONLY FOR ANALYZING ESNLI
-        # kept_list = kept_indices[task_name + "_split{}".format(self.model_wrapper.split)] if self.model_wrapper.max_split > 1 else kept_indices[task_name]
-        # gt_dev_set = [example for idx, example in enumerate(gt_dev_set) if idx in kept_list]
-
         # Number of examples must be equal between dev_set and groundtruth
         assert(len(self.dev_set) == len(gt_dev_set))
-        # print("***** Number of evaluated examples in total: {} *****".format(len(self.dev_set)))
+        print("***** Number of evaluated examples in total: {} *****".format(len(self.dev_set)))
         count_correct_preds = 0
 
         # For Statistics
@@ -252,9 +256,11 @@ class Evaluation(object):
             pred_label = example.get_pred_label()
             all_tokens = [x.token for x in example.get_all_attr_tokens()]
 
-            # CORRECT PREDICTIONS ONLY
-            if example.label not in self.model_wrapper.labels:
-                example.label = '1' if float(example.label) >= 0.5 else '0'
+            # If the task is "SST" then convert all soft labels to either '0' or '1' based on the threshold 0.5
+            if self.model_wrapper.data_args.task_name.lower() == "sst-2" and self.model_wrapper.data_args.sst_flag:
+                example.label = '0' if float(example.label) < 0.5 else '1'
+
+            # Only handle correctly-predicted examples
             if self.model_wrapper.labels.index(example.label) != example.pred_label:
                 continue
 
@@ -268,9 +274,6 @@ class Evaluation(object):
             else:
                 attr_scores = [0] * len(example.get_attribution_scores())
 
-            # Baseline: All words are important
-            # attr_scores = [1] * len(attr_scores)
-
             # Number of attribution scores and tokens must be equal for each example
             # Attribution score must be in [0, 1]
             assert len(all_tokens) == len(attr_scores)
@@ -278,7 +281,7 @@ class Evaluation(object):
 
             high_attr_tokens = [idx for idx, attr_score in enumerate(attr_scores) if attr_score == 1]
             sets_1.append(high_attr_tokens)
-            sets_0.append([idx for idx, attr_score in enumerate(attr_scores)])  # Baseline: All words are highlighted
+            sets_0.append([idx for idx, attr_score in enumerate([1] * len(attr_scores))])  # Baseline: All words are important i.e., highlighted
 
             # For Statistics
             annotation_stats["analyzer"].append(len(high_attr_tokens))
@@ -286,7 +289,9 @@ class Evaluation(object):
 
             # Prepare set2: Groundtruth
             set2 = []
-            if hasattr(item2, "phrases"):   # SST
+
+            # SST
+            if hasattr(item2, "phrases"):
                 for phrase in item2.phrases:
                     # positive = 1 or negative = 0
                     if (pred_label == 1 and float(phrase.score) >= 0.7) or (pred_label == 0 and float(phrase.score) <= 0.3):
@@ -299,9 +304,10 @@ class Evaluation(object):
                 sets_2.append(list(set(itertools.chain(*set2))))
                 annotation_stats["human"].append(len(sets_2[-1]))
 
-            elif hasattr(item2, "highlights"): # ESNLI and MultiRC
+            # ESNLI and MultiRC
+            elif hasattr(item2, "highlights"):
                 # ThangPM: Temporarily hot fixed.
-                # Handle 24 cases that have empty tokens in either hypothesis or premise of sets_1.
+                # Handle 24 cases in ESNLI that have empty tokens in either hypothesis or premise of sets_1.
                 # Reason: Due to redundant spaces in the Huggingface datasets used --> Need to process this next time.
                 if item2.processed_length != len(all_tokens):
                     del_indices = [i for i, x in enumerate(all_tokens) if x == " "]
@@ -374,5 +380,5 @@ class Evaluation(object):
             highlight_tokens_set1[idx] = '\x1b[%sm%s\x1b[0m' % (format, token) if idx in set1 else token
             highlight_tokens_set2[idx] = '\x1b[%sm%s\x1b[0m' % (format, token) if idx in set2 else token
 
-        print(analyzer + ": " + " ".join(highlight_tokens_set1))    # highlight important words for set1
+        print(analyzer + ": " + " ".join(highlight_tokens_set1))      # highlight important words for set1
         print("\nHuman: " + " ".join(highlight_tokens_set2))          # highlight important words for set2

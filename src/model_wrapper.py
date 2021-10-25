@@ -61,7 +61,6 @@ class RoBERTa_Model_Wrapper(object):
                 self.data_args.task_name = task_name.lower()
                 self.data_args.data_dir = self.data_args.data_dir.replace("${TASK_NAME}", task_name)
                 self.model_args.model_name_or_path = self.model_args.model_name_or_path.replace("${TASK_NAME}", task_name)
-                self.training_args.output_dir = self.training_args.output_dir.replace("${TASK_NAME}", task_name)
 
             self.num_labels = glue_tasks_num_labels[self.data_args.task_name]
             self.output_mode = glue_output_modes[self.data_args.task_name]
@@ -99,9 +98,10 @@ class RoBERTa_Model_Wrapper(object):
             cache_dir=self.model_args.cache_dir,
         )
 
-        # Random weights of the classifier ONLY for SANITY CHECK
-        # torch.manual_seed(self.training_args.seed)
-        # torch.nn.init.xavier_uniform_(self.model.classifier.weight)
+        # ThangPM: Random weights of the classifier ONLY for SANITY CHECK
+        if self.data_args.sanity_check:
+            torch.manual_seed(self.training_args.seed)
+            torch.nn.init.xavier_uniform_(self.model.classifier.weight)
 
         self.train_dataset, self.eval_dataset, self.test_dataset = None, None, None
 
@@ -208,16 +208,12 @@ class RoBERTa_Model_Wrapper(object):
         assert self.text_a == "" or self.text_b == ""
 
         for idx, sentence in enumerate(list_sentences):
-            # processed_sentence = re.sub(r"\s{2,}", " ", sentence)
-            # doc = self.nlp(processed_sentence)
-            # words = [clean_str_updated(str(token)) for token in doc]
-            # tokenized_sentence = " ".join(words)
-
             text_a = self.text_a if self.text_a else sentence
             text_b = self.text_b if self.text_b else sentence
 
-            # HARD-CODE TEMPORARILY FOR SST WITH LIME AND LIME-BERT
-            text_b = ""
+            # SST/SST-2 WITH LIME AND LIME-BERT
+            if self.data_args.task_name.lower() == "sst-2":
+                text_b = ""
 
             example = InputExample(
                 guid="predict-" + str(idx),
@@ -248,19 +244,14 @@ class RoBERTa_Model_Wrapper(object):
     def predict_proba(self, list_sentences, get_sent_embs=False):
 
         predict_dataset = self.prepare_dataset_for_prediction(list_sentences)
-        prediction_output = self.trainer.predict(test_dataset=predict_dataset, get_sent_embs=get_sent_embs)
+        prediction_output = self.trainer.predict(test_dataset=predict_dataset)
         total_logits = softmax(prediction_output.predictions, axis=1)
-
-        if get_sent_embs:
-            return total_logits, prediction_output.ml_objects
         return total_logits
 
-    def predict_proba_with_examples(self, examples, get_sent_embs=False, get_attentions=False):
+    def predict_proba_with_examples(self, examples):
 
-        # FOR SST TASK ONLY --> USE SST-2 MODEL
-        # Compare with "sst-2" because the task from bash script is SST-2 but
-        # in run_analyzers_lite, it is "sst"
-        if self.data_args.task_name.lower() == "sst-2":
+        # If the task is "SST" then convert all soft labels to either '0' or '1' based on the threshold 0.5
+        if self.data_args.task_name.lower() == "sst-2" and self.data_args.sst_flag:
             for example in examples:
                 example.label = '0' if float(example.label) < 0.5 else '1'
 
@@ -268,11 +259,8 @@ class RoBERTa_Model_Wrapper(object):
             GlueDataset(self.data_args, tokenizer=self.tokenizer, mode="ris", cache_dir=self.model_args.cache_dir, examples=examples)
         )
 
-        prediction_output = self.trainer.predict(test_dataset=predict_dataset, get_sent_embs=get_sent_embs, get_attentions=get_attentions)
+        prediction_output = self.trainer.predict(test_dataset=predict_dataset)
         total_logits = softmax(prediction_output.predictions, axis=1)
-
-        if get_sent_embs:
-            return total_logits, prediction_output.ml_objects
 
         return total_logits, None
 
@@ -308,17 +296,6 @@ class RoBERTa_Model_Wrapper(object):
                 masked_tokens = self.masked_tokenizer.convert_ids_to_tokens(top_token_ids)
                 masked_probs = sorted(masked_probs, reverse=True)[:top_N]
                 return_outputs.append((masked_tokens, masked_probs))
-
-                # if top_N:
-                #     return_outputs.append((masked_tokens[:top_N], masked_probs[:top_N]))
-                # else:
-                #     tokens, probs = [], []
-                #     for masked_token, masked_prob in zip(masked_tokens, masked_probs):
-                #         if masked_prob >= threshold:
-                #             tokens.append(masked_token)
-                #             probs.append(masked_prob)
-                #
-                #     return_outputs.append((tokens, probs))
 
         return return_outputs
 
@@ -364,8 +341,9 @@ class RoBERTa_Model_Wrapper(object):
             text_a = self.text_a if self.text_a else masked_sent
             text_b = self.text_b if self.text_b else masked_sent
 
-            # HARD-CODE TEMPORARILY FOR SST WITH LIME AND LIME-BERT
-            text_b = ""
+            # SST/SST-2 WITH LIME AND LIME-BERT
+            if self.data_args.task_name.lower() == "sst-2":
+                text_b = ""
 
             batch_text_or_text_pairs.append((text_a, text_b))
 
@@ -417,8 +395,9 @@ class RoBERTa_Model_Wrapper(object):
             text_a = self.text_a if self.text_a else masked_sent
             text_b = self.text_b if self.text_b else masked_sent
 
-            # HARD-CODE TEMPORARILY FOR SST WITH LIME AND LIME-BERT
-            text_b = ""
+            # SST/SST-2 WITH LIME AND LIME-BERT
+            if self.data_args.task_name.lower() == "sst-2":
+                text_b = ""
 
             # Fill in [MASK] tokens conditionally: One at a time
             filled_sent = text_a

@@ -31,9 +31,10 @@ class InputMarginalizationAnalyzer(Analyzer):
 
         # Load a pickle file of all confidence scores if existed for faster analyzing.
         lite_pickle_fb = self.prefix + ALL_CONF_SCORES + self.suffix
-        if not exists(lite_pickle_fb):
+        if not exists(lite_pickle_fb) or self.model_wrapper.data_args.overwrite_results:
 
             # Load a pickle file of all input examples if existed for faster analyzing.
+            # We do not need to re-generate masked examples if the pickle file exists since it's always the same.
             lite_pickle_fb = self.prefix + INPUT_EXAMPLES + self.suffix
             if not exists(lite_pickle_fb):
                 self.prepare_examples_for_analysis()
@@ -57,32 +58,28 @@ class InputMarginalizationAnalyzer(Analyzer):
                     del self.examples[:chunk_size]
 
             self.save_all_conf_scores()
-        else:
-            self.load_chunk_size_list()
-            self.load_all_conf_scores()
-            print("***** LOADING PRE-GENERATED CONFIDENCE SCORES *****")
 
-        # Load dev_set for computing attribution scores
-        self.load_dev_set()
+            # Load dev_set again for computing attribution scores
+            self.load_dev_set()
 
-        for idx in tqdm(range(len(self.chunk_size_list))):
-            start = 0 if idx == 0 else self.chunk_size_list[idx-1]
-            end = self.chunk_size_list[idx]
+            for idx in tqdm(range(len(self.chunk_size_list))):
+                start = 0 if idx == 0 else self.chunk_size_list[idx-1]
+                end = self.chunk_size_list[idx]
 
-            conf_scores = self.all_conf_scores[start:end]
-            ori_pred = np.argmax(conf_scores[0])
+                conf_scores = self.all_conf_scores[start:end]
+                ori_pred = np.argmax(conf_scores[0])
 
-            # Compute attribution score
-            masked_examples = self.dev_set[idx]["masked_examples"]
-            attr_scores = self.compute_input_margination(masked_examples, conf_scores)
+                # Compute attribution score
+                masked_examples = self.dev_set[idx]["masked_examples"]
+                attr_scores = self.compute_input_margination(masked_examples, conf_scores)
 
-            # Update results for the original example
-            self.dev_set[idx]["ori_example"].set_pred_label(ori_pred)
-            self.dev_set[idx]["ori_example"].set_confidence_score(conf_scores[0][ori_pred])
-            self.dev_set[idx]["ori_example"].set_attribution_scores(attr_scores)
+                # Update results for the original example
+                self.dev_set[idx]["ori_example"].set_pred_label(ori_pred)
+                self.dev_set[idx]["ori_example"].set_confidence_score(conf_scores[0][ori_pred])
+                self.dev_set[idx]["ori_example"].set_attribution_scores(attr_scores)
 
-        # Save the latest dev_set for visualization
-        self.save_dev_set()
+            # Save the latest dev_set for visualization
+            self.save_dev_set()
 
     def compute_input_margination(self, masked_examples, conf_scores, topN=None):
 

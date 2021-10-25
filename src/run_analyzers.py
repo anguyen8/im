@@ -1,3 +1,11 @@
+import sys
+from data_processors.human_annotations import data_processor_sst
+from data_processors.human_annotations import data_processor_esnli
+from data_processors.human_annotations import data_processor_multirc
+sys.modules['data_processor_sst'] = data_processor_sst
+sys.modules['data_processor_esnli'] = data_processor_esnli
+sys.modules['data_processor_multirc'] = data_processor_multirc
+
 import pickle
 import time
 from functools import wraps
@@ -68,13 +76,14 @@ CHUNK_SIZE_LIST = "chunk_size_list"
 ALL_CONF_SCORES = "all_conf_scores"
 
 folder_name_dict = {
-    "esnli": "ESNLI",
-    "sst": "SST",
     "sst-2": "SST-2",
+    "sst": "SST",
+    "esnli": "ESNLI",
     "multirc": "MultiRC",
 }
 
 skipped_indices = {
+    "sst-2": [],
     "sst": [],
     "esnli": [],
     "multirc_split0": [497, 498, 500, 506, 513, 517, 518, 519, 520, 720, 721, 722, 723, 724, 725, 726, 727, 728, 729, 730, 731, 732, 733, 734, 735],
@@ -98,132 +107,138 @@ def my_timer(my_func):
 
 def run_occlusion(model_wrapper, task_name, analyzer, pickle_fn, replaced_token):
     occ_analyzer = OcclusionAnalyzer(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn,
-                                     # FOR TESTING NEW EVALUATION METHOD --> IF USE, DISABLE RUN() AS WELL
-                                     processed_pickle_fn=FILLED_EXAMPLES,
-                                     replaced_token=replaced_token)
+                                     processed_pickle_fn=FILLED_EXAMPLES, replaced_token=replaced_token)
     occ_analyzer.run()
 
     # Handle this temporarily since I haven't skipped those examples when running OccEmpty
-    '''
     if task_name == "multirc" or task_name == "esnli":
         skipped_list = skipped_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else skipped_indices[task_name]
-        # kept_list = kept_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else kept_indices[task_name]
-
         dev_set = [example for idx, example in enumerate(occ_analyzer.get_dev_set()) if idx not in skipped_list]
         occ_analyzer.set_dev_set(dev_set)
 
     occ_evaluation = Evaluation(model_wrapper, occ_analyzer.get_dev_set())
-    # occ_evaluation.compute_auc_score("replacement", corr_pred_only=False)
-    occ_evaluation.compute_auc_score(corr_pred_only=True)                   # AUC
-    occ_evaluation.compute_auc_score("replacement", corr_pred_only=True)    # AUC_rep
-    '''
-    # -----------------------------------------------------------------------------
-    # FOR ROAR ONLY
-    # -----------------------------------------------------------------------------
-    '''
-    # del_rates = [0.2, 0.5, 0.8]
-    del_rates = [0.1, 0.2, 0.3]
-    for del_rate in del_rates:
-        occ_evaluation.generate_examples_for_roar(prefix=occ_analyzer.prefix,
-                                                  suffix=occ_analyzer.suffix,
-                                                  del_rate=del_rate, use_bert=False,
-                                                  random_baseline=True)
-    '''
-    # -----------------------------------------------------------------------------
-    # FOR IoU ONLY
-    # -----------------------------------------------------------------------------
-    '''
-    alphas = np.arange(0.05, 1, 0.05)
-    # alphas = [0.05] # levels = 0.05, 0.2, 0.45
+    eval_metric = model_wrapper.data_args.eval_metric
 
-    groundtruth_path = "pickle_files/{}_preprocessed{}.pickle".format(task_name, ("_2" if task_name == "esnli" else ""))
-    with open(groundtruth_path, "rb") as file_path:
-        groundtruth_sets = pickle.load(file_path)
+    # AUC and AUC_rep
+    if eval_metric == "auc":
+        occ_evaluation.compute_auc_score(corr_pred_only=True)                   # AUC
 
-        if model_wrapper.split != None:
-            chunk_size = int(len(groundtruth_sets) / model_wrapper.max_split)
-            groundtruth_sets = groundtruth_sets[model_wrapper.split*chunk_size:(model_wrapper.split+1)*chunk_size]
+    elif eval_metric == "auc_bert":
+        occ_evaluation.compute_auc_score("replacement", corr_pred_only=True)    # i.e., AUC_rep
 
-    scores_baseline = []
-    for alpha in alphas:
-        results = occ_evaluation.compute_IoU_score(analyzer, groundtruth_sets, alpha, visualize=True if len(alphas) == 1 else False)
-        IoU, precision, recall = results["scores"]
-        scores_baseline.append(results["scores_baseline"])
-        print("\t".join([str(alpha), str(IoU), str(precision), str(recall)]))   # For easily copying to Google Sheets.
+    # ROAR
+    elif eval_metric == "roar" or eval_metric == "roar_bert":
+        del_rates = [0.1, 0.2, 0.3]
+        use_bert = True if eval_metric == "roar_bert" else False
 
-    for (IoU_baseline, precision_baseline, recall_baseline) in tuple(set(scores_baseline)):
-        print("\t".join(["Baseline:", str(IoU_baseline), str(precision_baseline), str(recall_baseline)]))    # For easily copying to Google Sheets.
-    '''
+        for del_rate in del_rates:
+            occ_evaluation.generate_examples_for_roar(prefix=occ_analyzer.prefix,
+                                                      suffix=occ_analyzer.suffix,
+                                                      del_rate=del_rate, use_bert=use_bert,
+                                                      random_baseline=False)
+
+        print("Finished generating new examples for {}. \n"
+              "Please run the script `run_glue.sh` to re-train and re-evaluate the model on new examples.".format(eval_metric))
+
+    # Human annotations/highlights
+    elif model_wrapper.data_args.eval_metric == "human_highlights":
+        alphas = np.arange(0.05, 1, 0.05)
+        agreement_levels = [2, 3]
+
+        for agreement_level in agreement_levels:
+            groundtruth_path = "../data/pickle_files/human_annotations/{}_preprocessed{}.pickle".format(task_name, ("_" + str(agreement_level) if task_name == "esnli" else ""))
+            with open(groundtruth_path, "rb") as file_path:
+                groundtruth_sets = pickle.load(file_path)
+
+                if model_wrapper.split != None:
+                    chunk_size = int(len(groundtruth_sets) / model_wrapper.max_split)
+                    groundtruth_sets = groundtruth_sets[model_wrapper.split*chunk_size:(model_wrapper.split+1)*chunk_size]
+
+            scores_baseline = []
+            for alpha in alphas:
+                results = occ_evaluation.compute_IoU_score(analyzer, groundtruth_sets, alpha, visualize=True if len(alphas) == 1 else False)
+                IoU, precision, recall = results["scores"]
+                scores_baseline.append(results["scores_baseline"])
+
+                # For easily copying to Google Sheets.
+                print("\t".join([str(alpha), str(IoU), str(precision), str(recall)]))
+
+            for (IoU_baseline, precision_baseline, recall_baseline) in tuple(set(scores_baseline)):
+                # For easily copying to Google Sheets.
+                print("\t".join(["Baseline:", str(IoU_baseline), str(precision_baseline), str(recall_baseline)]))
+
     del occ_analyzer
 
 
 def run_input_marginalization(model_wrapper, task_name, analyzer, pickle_fn, threshold):
     input_margin_analyzer = InputMarginalizationAnalyzer(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn,
-                                                         # FOR TESTING NEW EVALUATION METHOD --> IF USE, DISABLE RUN() AS WELL
-                                                         processed_pickle_fn=FILLED_EXAMPLES,
-                                                         threshold=threshold,)
+                                                         processed_pickle_fn=FILLED_EXAMPLES, threshold=threshold,)
     input_margin_analyzer.run()
 
     # Handle this temporarily since I haven't skipped those examples when running
-    '''
-    if task_name == "esnli":
+    if task_name == "multirc" or task_name == "esnli":
         skipped_list = skipped_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else skipped_indices[task_name]
-        # kept_list = kept_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else kept_indices[task_name]
-
         dev_set = [example for idx, example in enumerate(input_margin_analyzer.get_dev_set()) if idx not in skipped_list]
         input_margin_analyzer.set_dev_set(dev_set)
 
     input_margin_evaluation = Evaluation(model_wrapper, input_margin_analyzer.get_dev_set())
-    # input_margin_evaluation.compute_auc_score("replacement", corr_pred_only=False)
-    input_margin_evaluation.compute_auc_score(corr_pred_only=True)                  # AUC
-    input_margin_evaluation.compute_auc_score("replacement", corr_pred_only=True)   # AUC_rep
-    '''
-    # -----------------------------------------------------------------------------
-    # FOR ROAR ONLY
-    # -----------------------------------------------------------------------------
-    '''
-    # del_rates = [0.2, 0.5, 0.8]
-    del_rates = [0.1, 0.2, 0.3]
-    for del_rate in del_rates:
-        input_margin_evaluation.generate_examples_for_roar(prefix=input_margin_analyzer.prefix,
-                                                           suffix=input_margin_analyzer.suffix,
-                                                           del_rate=del_rate, use_bert=False,
-                                                           random_baseline=True)
-    '''
-    # -----------------------------------------------------------------------------
-    # FOR IoU ONLY
-    # -----------------------------------------------------------------------------
-    '''
-    alphas = np.arange(0.05, 1, 0.05)
-    # alphas = [0.05] # levels = 0.05, 0.15, 0.45
+    eval_metric = model_wrapper.data_args.eval_metric
 
-    groundtruth_path = "pickle_files/{}_preprocessed{}.pickle".format(task_name, ("_2" if task_name == "esnli" else ""))
-    with open(groundtruth_path, "rb") as file_path:
-        groundtruth_sets = pickle.load(file_path)
+    # AUC and AUC_rep
+    if model_wrapper.data_args.eval_metric == "auc":
+        input_margin_evaluation.compute_auc_score(corr_pred_only=True)                  # AUC
 
-        if model_wrapper.split != None:
-            chunk_size = int(len(groundtruth_sets) / model_wrapper.max_split)
-            groundtruth_sets = groundtruth_sets[model_wrapper.split*chunk_size:(model_wrapper.split+1)*chunk_size]
+    elif eval_metric == "auc_bert":
+        input_margin_evaluation.compute_auc_score("replacement", corr_pred_only=True)   # i.e., AUC_rep
 
-    scores_baseline = []
-    for alpha in alphas:
-        results = input_margin_evaluation.compute_IoU_score(analyzer, groundtruth_sets, alpha, visualize=True if len(alphas) == 1 else False)
-        IoU, precision, recall = results["scores"]
-        scores_baseline.append(results["scores_baseline"])
-        print("\t".join([str(alpha), str(IoU), str(precision), str(recall)]))   # For easily copying to Google Sheets.
+    # ROAR
+    elif eval_metric == "roar" or eval_metric == "roar_bert":
+        del_rates = [0.1, 0.2, 0.3]
+        use_bert = True if eval_metric == "roar_bert" else False
 
-    for (IoU_baseline, precision_baseline, recall_baseline) in tuple(set(scores_baseline)):
-        print("\t".join(["Baseline:", str(IoU_baseline), str(precision_baseline), str(recall_baseline)]))    # For easily copying to Google Sheets.
-    '''
+        for del_rate in del_rates:
+            input_margin_evaluation.generate_examples_for_roar(prefix=input_margin_analyzer.prefix,
+                                                               suffix=input_margin_analyzer.suffix,
+                                                               del_rate=del_rate, use_bert=use_bert,
+                                                               random_baseline=False)
+
+        print("Finished generating new examples for {}. \n"
+              "Please run the script `run_glue.sh` to re-train and re-evaluate the model on new examples.".format(eval_metric))
+
+    # Human annotations/highlights
+    elif model_wrapper.data_args.eval_metric == "human_highlights":
+        alphas = np.arange(0.05, 1, 0.05)
+        agreement_levels = [2, 3]
+
+        for agreement_level in agreement_levels:
+            groundtruth_path = "../data/pickle_files/human_annotations/{}_preprocessed{}.pickle".format(task_name, ("_" + str(agreement_level) if task_name == "esnli" else ""))
+            with open(groundtruth_path, "rb") as file_path:
+                groundtruth_sets = pickle.load(file_path)
+
+                if model_wrapper.split != None:
+                    chunk_size = int(len(groundtruth_sets) / model_wrapper.max_split)
+                    groundtruth_sets = groundtruth_sets[model_wrapper.split*chunk_size:(model_wrapper.split+1)*chunk_size]
+
+            scores_baseline = []
+            for alpha in alphas:
+                results = input_margin_evaluation.compute_IoU_score(analyzer, groundtruth_sets, alpha, visualize=True if len(alphas) == 1 else False)
+                IoU, precision, recall = results["scores"]
+                scores_baseline.append(results["scores_baseline"])
+
+                # For easily copying to Google Sheets.
+                print("\t".join([str(alpha), str(IoU), str(precision), str(recall)]))
+
+            for (IoU_baseline, precision_baseline, recall_baseline) in tuple(set(scores_baseline)):
+                # For easily copying to Google Sheets.
+                print("\t".join(["Baseline:", str(IoU_baseline), str(precision_baseline), str(recall_baseline)]))
+
     del input_margin_analyzer
 
 
 def run_lime(model_wrapper, task_name, analyzer, pickle_fn, replaced_token):
     lime_analyzer = LimeAnalyzer(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn,
-                                 # FOR TESTING NEW EVALUATION METHOD --> IF USE, DISABLE RUN() AS WELL
-                                 processed_pickle_fn=FILLED_EXAMPLES,
-                                 replaced_token=replaced_token)
-    # lime_analyzer.run()
+                                 processed_pickle_fn=FILLED_EXAMPLES, replaced_token=replaced_token)
+    lime_analyzer.run()
 
     # Handle this temporarily since I haven't skipped those examples when running OccEmpty
     if task_name == "multirc" or task_name == "esnli":
@@ -232,44 +247,32 @@ def run_lime(model_wrapper, task_name, analyzer, pickle_fn, replaced_token):
         lime_analyzer.set_dev_set(dev_set)
 
     lime_evaluation = Evaluation(model_wrapper, lime_analyzer.get_dev_set())
-    # lime_evaluation.compute_auc_score("replacement", corr_pred_only=False)
-    # lime_evaluation.compute_auc_score("replacement", corr_pred_only=True)
 
-    # -----------------------------------------------------------------------------
-    # FOR ROAR ONLY
-    # -----------------------------------------------------------------------------
-    '''
-    del_rates = [0.2, 0.5, 0.8]
-    for del_rate in del_rates:
-        lime_evaluation.generate_examples_for_roar(prefix=lime_analyzer.prefix,
-                                                   suffix=lime_analyzer.suffix,
-                                                   del_rate=del_rate)
-    '''
-    # -----------------------------------------------------------------------------
-    # FOR IoU ONLY
-    # -----------------------------------------------------------------------------
-
+    # ThangPM: Reported only Human annotations/highlights in paper
     alphas = np.arange(0.05, 1, 0.05)
-    # alphas = [0.05] # levels = 0.05, 0.2, 0.45
+    agreement_levels = [2, 3]
 
-    groundtruth_path = "pickle_files/{}_preprocessed{}.pickle".format(task_name, ("_2" if task_name == "esnli" else ""))
-    with open(groundtruth_path, "rb") as file_path:
-        groundtruth_sets = pickle.load(file_path)
+    for agreement_level in agreement_levels:
+        groundtruth_path = "../data/pickle_files/human_annotations/{}_preprocessed{}.pickle".format(task_name, ("_" + str(agreement_level) if task_name == "esnli" else ""))
+        with open(groundtruth_path, "rb") as file_path:
+            groundtruth_sets = pickle.load(file_path)
 
-        if model_wrapper.split != None:
-            chunk_size = int(len(groundtruth_sets) / model_wrapper.max_split)
-            groundtruth_sets = groundtruth_sets[model_wrapper.split * chunk_size:(model_wrapper.split + 1) * chunk_size]
+            if model_wrapper.split != None:
+                chunk_size = int(len(groundtruth_sets) / model_wrapper.max_split)
+                groundtruth_sets = groundtruth_sets[model_wrapper.split * chunk_size:(model_wrapper.split + 1) * chunk_size]
 
-    scores_baseline = []
-    for alpha in alphas:
-        results = lime_evaluation.compute_IoU_score(analyzer, groundtruth_sets, alpha,
-                                                    visualize=True if len(alphas) == 1 else False)
-        IoU, precision, recall = results["scores"]
-        scores_baseline.append(results["scores_baseline"])
-        print("\t".join([str(alpha), str(IoU), str(precision), str(recall)]))  # For easily copying to Google Sheets.
+        scores_baseline = []
+        for alpha in alphas:
+            results = lime_evaluation.compute_IoU_score(analyzer, groundtruth_sets, alpha, visualize=True if len(alphas) == 1 else False)
+            IoU, precision, recall = results["scores"]
+            scores_baseline.append(results["scores_baseline"])
 
-    for (IoU_baseline, precision_baseline, recall_baseline) in tuple(set(scores_baseline)):
-        print("\t".join(["Baseline:", str(IoU_baseline), str(precision_baseline), str(recall_baseline)]))  # For easily copying to Google Sheets.
+            # For easily copying to Google Sheets.
+            print("\t".join([str(alpha), str(IoU), str(precision), str(recall)]))
+
+        for (IoU_baseline, precision_baseline, recall_baseline) in tuple(set(scores_baseline)):
+            # For easily copying to Google Sheets.
+            print("\t".join(["Baseline:", str(IoU_baseline), str(precision_baseline), str(recall_baseline)]))
 
     del lime_analyzer
 
@@ -279,7 +282,13 @@ def run_analyzers(threshold=10e-5):
 
     # Prepare a classifier for LIME to generate explanations
     model_wrapper = RoBERTa_Model_Wrapper()
-    task_name = model_wrapper.data_args.task_name if model_wrapper.data_args.task_name != "sst-2" else "sst-2" # "sst" or "sst-2"
+    task_name = model_wrapper.data_args.task_name
+
+    # Since SST-2 model is used for SST task, we need to convert it to SST-2 for loading model first and then
+    # changing it back to SST task below if the flag is on.
+    if task_name == "sst-2" and model_wrapper.data_args.sst_flag:
+        task_name = "sst"
+
     analyzer = model_wrapper.data_args.analyzer
     model_wrapper.max_split = 1 if task_name != "multirc" else 3
 
@@ -289,7 +298,7 @@ def run_analyzers(threshold=10e-5):
         pickle_fn = "../data/pickle_files/masked_examples/masked_examples_{}_{}_split{}.pickle".format(mode, task_name, i)
         model_wrapper.split = i
         if model_wrapper.max_split == 1:
-            pickle_fn = "pickle_files/masked_examples_{}_{}.pickle".format(mode, task_name)
+            pickle_fn = "../data/pickle_files/masked_examples/masked_examples_{}_{}.pickle".format(mode, task_name)
             model_wrapper.split = None
 
         if analyzer == "InputMargin":

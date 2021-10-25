@@ -8,13 +8,17 @@ sys.modules['attribution_example'] = attribution_example
 
 
 folder_name_dict = {
-    "esnli": "ESNLI",
-    "sst": "SST",
     "sst-2": "SST-2",
+    "sst": "SST",
+    "esnli": "ESNLI",
     "multirc": "MultiRC",
 }
 
+# ThangPM Notes:
+# Skipping those examples too long which exceed the max_seq_len of BERT which is only 512.
+# All examples skipped belong to MultiRC task.
 skipped_indices = {
+    "sst-2": [],
     "sst": [],
     "esnli": [],
     "multirc_split0": [497, 498, 500, 506, 513, 517, 518, 519, 520, 720, 721, 722, 723, 724, 725, 726, 727, 728, 729, 730, 731, 732, 733, 734, 735],
@@ -40,14 +44,11 @@ class Analyzer(object):
 
         checkpoint = model_wrapper.data_args.checkpoint
         model_base = model_wrapper.data_args.model_base
-        masked_lm = model_wrapper.data_args.masked_lm
-        masked_lm = "MLM-" + masked_lm if masked_lm and analyzer == "RIS" else None
 
-        # RANDOM SEED ARE FOR ONLY SANITY CHECK
+        # RANDOM SEEDS (e.g., 100, 200, ...) ARE FOR ONLY SANITY CHECK
         self.prefix = "../data/results/" + model_base + "/" + folder_name_dict[task_name] + "/" \
                       + checkpoint + "/" + analyzer + "/" \
-                      + (str(model_wrapper.training_args.seed) + "/" if model_wrapper.training_args.seed else "") \
-                      + (masked_lm + "/" if masked_lm else "")
+                      + (str(model_wrapper.training_args.seed) + "/" if model_wrapper.data_args.sanity_check else "")
 
         # ThangPM 03-29-21:
         # If there are multiple splits --> suffix = _splitX.pickle
@@ -73,6 +74,7 @@ class Analyzer(object):
 
         if not exists(lite_pickle_fb):
             with open(pickle_fn, "rb") as file_path:
+                # key for SST-2 task is `sst2` so we need to remove the dash '-' character.
                 key = self.task_name.replace("-", "") + "_" + self.ending if self.ending.startswith("split") else self.task_name.replace("-", "")
                 dev_set = pickle.load(file_path)[key]
 
