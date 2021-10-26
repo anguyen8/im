@@ -146,7 +146,7 @@ This repository contains source code necessary to reproduce some of the main res
     export CUDA_VISIBLE_DEVICES=0,1,2,3... # list of GPUs separated by a comma
     ```
 
-5. download the pre-computed pickle files of masked examples used for attribution methods and human highlights used for evaluation by running the following script
+5. Download the pre-computed pickle files of masked examples used for attribution methods and human highlights used for evaluation by running the following script
 
     ```sh
     python auto_download.py
@@ -208,7 +208,7 @@ We also provide an interactive demo to compare the qualitative results between `
   ```sh
   # Make sure your working directory is src/ before running this script
   # The positional arguments are: task_name text_a text_b theta which is the threshold used to binarize attribution maps (default value is 0.05)
-  # FOR SST-2
+  # FOR SST
   bash ../scripts/run_demo.sh "SST" "Mr. Tsai is a very original artist in his medium , and What Time Is It There ?" "" 0.05
   
   # For ESNLI
