@@ -257,7 +257,7 @@ class Evaluation(object):
 
             # If the task is "SST" then convert all soft labels to either '0' or '1' based on the threshold 0.5
             if self.model_wrapper.data_args.task_name.lower() == "sst-2" and self.model_wrapper.data_args.sst_flag:
-                example.label = '0' if float(example.label) < 0.5 else '1'
+                example.label = '0' if example.label and float(example.label) < 0.5 else '1'
 
             # Only handle correctly-predicted examples
             if self.model_wrapper.labels.index(example.label) != example.pred_label:

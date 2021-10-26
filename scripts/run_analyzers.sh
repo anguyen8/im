@@ -41,18 +41,4 @@ params+=(--analyzer "${METHOD}")
 params+=(--checkpoint "${CHECKPOINT}")
 params+=(--eval_metric "${METRIC}")
 
-python src/run_analyzers.py "${params[@]}"
-
-#python ../src/run_analyzers.py \
-#--model_name_or_path ../data/models/bert-base-uncased/${TASK_NAME} \
-#--task_name ${TASK_NAME} \
-#--sst_flag ${SST_FLAG} \
-#--do_eval \
-#--data_dir ../data/datasets/${TASK_NAME} \
-#--max_seq_length 128 \
-#--per_device_eval_batch_size 32 \
-#--model_base bert-base-uncased \
-#--masked_lm bert-base-uncased \
-#--analyzer ${METHOD} \
-#--checkpoint final_dev
-
+python run_analyzers.py "${params[@]}"

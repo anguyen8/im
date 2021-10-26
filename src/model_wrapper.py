@@ -253,7 +253,7 @@ class ModelWrapper(object):
         # If the task is "SST" then convert all soft labels to either '0' or '1' based on the threshold 0.5
         if self.data_args.task_name.lower() == "sst-2" and self.data_args.sst_flag:
             for example in examples:
-                example.label = '0' if float(example.label) < 0.5 else '1'
+                example.label = '0' if example.label and float(example.label) < 0.5 else '1'
 
         predict_dataset = (
             GlueDataset(self.data_args, tokenizer=self.tokenizer, cache_dir=self.model_args.cache_dir, examples=examples)
