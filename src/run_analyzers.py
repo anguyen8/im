@@ -1,11 +1,3 @@
-import sys
-from data_processors.human_annotations import data_processor_sst
-from data_processors.human_annotations import data_processor_esnli
-from data_processors.human_annotations import data_processor_multirc
-sys.modules['data_processor_sst'] = data_processor_sst
-sys.modules['data_processor_esnli'] = data_processor_esnli
-sys.modules['data_processor_multirc'] = data_processor_multirc
-
 import pickle
 import time
 from functools import wraps
@@ -17,6 +9,11 @@ from analyzers import LeaveOneOutAnalyzer
 from analyzers import InputMarginalizationAnalyzer
 from analyzers import LimeAnalyzer
 from evaluation import Evaluation
+
+from data_processors.human_annotations.data_processor_sst import Sentence
+from data_processors.human_annotations.data_processor_sst import Phrase
+from data_processors.human_annotations.data_processor_esnli import Example
+from data_processors.human_annotations.data_processor_multirc import Example
 
 # from lime.lime_text import LimeTextExplainer
 plt.rcParams['font.family'] = 'serif'
@@ -138,7 +135,7 @@ def run_leave_one_out(model_wrapper, task_name, analyzer, pickle_fn, replaced_to
                                                       random_baseline=False)
 
         print("Finished generating new examples for {}. \n"
-              "Please run the script `run_glue.sh` to re-train and re-evaluate the model on new examples.".format(eval_metric))
+              "Please run the script `run_glue.sh` under src/transformers/ directory to re-train and re-evaluate the model on new examples.".format(eval_metric))
 
     # Human annotations/highlights
     elif model_wrapper.data_args.eval_metric == "human_highlights":
@@ -203,7 +200,7 @@ def run_input_marginalization(model_wrapper, task_name, analyzer, pickle_fn, thr
                                                                random_baseline=False)
 
         print("Finished generating new examples for {}. \n"
-              "Please run the script `run_glue.sh` to re-train and re-evaluate the model on new examples.".format(eval_metric))
+              "Please run the script `run_glue.sh` under src/transformers/ directory to re-train and re-evaluate the model on new examples.".format(eval_metric))
 
     # Human annotations/highlights
     elif model_wrapper.data_args.eval_metric == "human_highlights":

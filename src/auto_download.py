@@ -23,7 +23,7 @@ if __name__ == "__main__":
         }
     }
 
-    destination = '../data/pickle_files/'
+    destination = 'data/pickle_files/'
 
     for path, files in data_direct_links.items():
         for file_name, direct_url in files.items():

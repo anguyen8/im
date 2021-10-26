@@ -41,7 +41,7 @@ params+=(--analyzer "${METHOD}")
 params+=(--checkpoint "${CHECKPOINT}")
 params+=(--eval_metric "${METRIC}")
 
-python ../src/run_analyzers.py "${params[@]}"
+python src/run_analyzers.py "${params[@]}"
 
 #python ../src/run_analyzers.py \
 #--model_name_or_path ../data/models/bert-base-uncased/${TASK_NAME} \

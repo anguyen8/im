@@ -242,7 +242,6 @@ class Evaluation(object):
 
         # Number of examples must be equal between dev_set and groundtruth
         assert(len(self.dev_set) == len(gt_dev_set))
-        print("***** Number of evaluated examples in total: {} *****".format(len(self.dev_set)))
         count_correct_preds = 0
 
         # For Statistics
@@ -361,8 +360,6 @@ class Evaluation(object):
 
         IoU_baseline, precision_baseline, recall_baseline = compute_scores(sets_1=sets_0, sets_2=sets_2)
         IoU, precision, recall = compute_scores(sets_1=sets_1, sets_2=sets_2)
-
-        # print("***** Number of evaluated examples: {} *****".format(count_correct_preds))
 
         return {"scores": (IoU, precision, recall), "scores_baseline": (IoU_baseline, precision_baseline, recall_baseline)}
 
