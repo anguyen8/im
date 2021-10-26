@@ -3,13 +3,10 @@ filelock
 tqdm
 tokenizers
 nltk
-sentencepiece
 six
-sacremoses
 packaging
 scipy
 spacy
-texttable
 matplotlib
 scikit-learn
 tensorboard
