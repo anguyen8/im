@@ -43,7 +43,8 @@
   <h3 align="center">Analysis of Attribution Methods</h3>
 
   <p align="center">
-    Pham, Bui, Mai, Nguyen (2021). Double Trouble: How to not explain a text classifier's decisions using counterfactuals synthesized by masked language models.
+    <a href="https://arxiv.org/abs/2110.11929">Double Trouble: How to not explain a text classifier's decisions using counterfactuals synthesized by masked language models?</a>
+    Pham, Bui, Mai, Nguyen (2021).
     <br />
     <br />
     <a href="https://github.com/anguyen8/im/issues">Report Bug</a>
@@ -208,7 +209,7 @@ We also provide an interactive demo to compare the qualitative results between `
   ```sh
   # Make sure your working directory is src/ before running this script
   # The positional arguments are: task_name text_a text_b theta which is the threshold used to binarize attribution maps (default value is 0.05)
-  # FOR SST
+  # For SST
   bash ../scripts/run_demo.sh "SST" "Mr. Tsai is a very original artist in his medium , and What Time Is It There ?" "" 0.05
   
   # For ESNLI
