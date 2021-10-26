@@ -21,6 +21,14 @@ DATA_DIR=../data/datasets/${TASK_NAME}
 MODEL_BASE=bert-base-uncased
 CHECKPOINT=final_dev
 
+if [[ ${TASK_NAME} == "SST" || ${TASK_NAME} == "SST-2" ]]; then
+  MODEL_NAME_OR_PATH=pmthangk09/bert-base-uncased-glue-sst2
+elif [[ ${TASK_NAME} == "ESNLI" ]]; then
+  MODEL_NAME_OR_PATH=pmthangk09/bert-base-uncased-esnli
+elif [[ ${TASK_NAME} == "ESNLI" ]]; then
+  MODEL_NAME_OR_PATH=pmthangk09/bert-base-uncased-superglue-multirc
+fi
+
 params+=(--model_name_or_path "${MODEL_NAME_OR_PATH}")
 params+=(--task_name "${TASK_NAME}")
 params+=(--do_eval)
