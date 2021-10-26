@@ -310,7 +310,7 @@ if __name__ == '__main__':
                         help='Provide the first input for running attribution methods')
     parser.add_argument('--text_b', dest='text_b', default="",
                         help='Provide the second input for running attribution methods')
-    parser.add_argument('--theta', dest='theta', default=0.05,
+    parser.add_argument('--theta', dest='theta', default=0.05, type=float,
                         help='Provide a threshold to binarize attribution maps')
 
     args, unknown_args = parser.parse_known_args()
