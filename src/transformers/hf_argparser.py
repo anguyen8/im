@@ -141,8 +141,9 @@ class HfArgumentParser(ArgumentParser):
         if return_remaining_strings:
             return (*outputs, remaining_args)
         else:
-            if remaining_args:
-                raise ValueError(f"Some specified arguments are not used by the HfArgumentParser: {remaining_args}")
+            # ThangPM: Ignore the check for the interactive demo with 2 additional arguments: --text_a and --text_b
+            # if remaining_args:
+            #     raise ValueError(f"Some specified arguments are not used by the HfArgumentParser: {remaining_args}")
 
             return (*outputs,)
 

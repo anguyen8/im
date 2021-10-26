@@ -51,7 +51,7 @@ class InputMarginalizationAnalyzer(Analyzer):
             # split+1 for handling the remaining examples
             for i in range(split+1):
                 if len(self.examples[:chunk_size]) > 0:
-                    conf_scores, _ = self.model_wrapper.predict_proba_with_examples(self.examples[:chunk_size])
+                    conf_scores = self.model_wrapper.predict_proba_with_examples(self.examples[:chunk_size])
                     self.all_conf_scores.extend(conf_scores)
 
                     # No longer needed --> Save memory

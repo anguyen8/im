@@ -46,7 +46,7 @@ class GlueDataTrainingArguments:
     # ThangPM
     model_base: str = field(default="", metadata={"help": "Model base (e.g., bert-base-uncased, roberta-base)"})
     masked_lm: str = field(default="", metadata={"help": "Masked language models for running analyzers (e.g., bert-base-uncased, roberta-base)"})
-    analyzer: str = field(default="", metadata={"help": "Analyzers (e.g., RIS, OccEmpty, OccZero)"})
+    analyzer: str = field(default="", metadata={"help": "Analyzers (e.g., IM, LOOEmpty, LOOUnk, LOOZero)"})
     sst_flag: bool = field(default=False, metadata={"help": "Specify SST task when necessary since task_name is set to SST-2"})
     checkpoint: str = field(default="", metadata={"help": "Specify a checkpoint i.e. output folder for attribution methods"})
     eval_metric: str = field(default="auc", metadata={"help": "Specify a metric used to evaluate IM and LOO_empty ['auc', 'auc_bert', 'roar', 'roar_bert', 'human_highlights']"})
@@ -69,7 +69,6 @@ class Split(Enum):
     train = "train"
     dev = "dev"
     test = "test"
-    ris = "ris"
 
 
 class GlueDataset(Dataset):

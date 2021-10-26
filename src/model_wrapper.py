@@ -47,7 +47,7 @@ class ModelArguments:
     )
 
 
-class RoBERTa_Model_Wrapper(object):
+class ModelWrapper(object):
 
     def __init__(self):
 
@@ -229,7 +229,7 @@ class RoBERTa_Model_Wrapper(object):
             self.data_args.max_seq_length = 512
 
         predict_dataset = (
-            GlueDataset(self.data_args, tokenizer=self.tokenizer, mode="ris", cache_dir=self.model_args.cache_dir, examples=examples)
+            GlueDataset(self.data_args, tokenizer=self.tokenizer, cache_dir=self.model_args.cache_dir, examples=examples)
         )
 
         self.data_args.max_seq_length = max_seq_length
@@ -241,7 +241,7 @@ class RoBERTa_Model_Wrapper(object):
         Input: List of sentences ['stringA', 'stringB']
         Output: Probabilities of all sentences with shape (n, k) with n is number of sentences, k is number of labels
     '''
-    def predict_proba(self, list_sentences, get_sent_embs=False):
+    def predict_proba(self, list_sentences):
 
         predict_dataset = self.prepare_dataset_for_prediction(list_sentences)
         prediction_output = self.trainer.predict(test_dataset=predict_dataset)
@@ -256,13 +256,13 @@ class RoBERTa_Model_Wrapper(object):
                 example.label = '0' if float(example.label) < 0.5 else '1'
 
         predict_dataset = (
-            GlueDataset(self.data_args, tokenizer=self.tokenizer, mode="ris", cache_dir=self.model_args.cache_dir, examples=examples)
+            GlueDataset(self.data_args, tokenizer=self.tokenizer, cache_dir=self.model_args.cache_dir, examples=examples)
         )
 
         prediction_output = self.trainer.predict(test_dataset=predict_dataset)
         total_logits = softmax(prediction_output.predictions, axis=1)
 
-        return total_logits, None
+        return total_logits
 
     def predict_as_masked_lm(self, examples, top_N, threshold=10e-5, max_length=128):
         mlm_outputs, return_outputs = [], []

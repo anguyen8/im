@@ -142,7 +142,7 @@ class Evaluation(object):
         else:
             self.generate_examples_for_deletion_method(corr_pred_only)
 
-        all_conf_scores, _ = self.model_wrapper.predict_proba_with_examples(self.del_examples)
+        all_conf_scores = self.model_wrapper.predict_proba_with_examples(self.del_examples)
         auc_scores, auc_scores_norm = [], []
         count = 0
 
@@ -266,7 +266,7 @@ class Evaluation(object):
 
             count_correct_preds += 1
 
-            # Prepare set0 (baseline) and set1 (RIS or OccEmpty)
+            # Prepare set0 (baseline) and set1 (IM or LOOEmpty)
             # Normalize + Zero-out and binarize
             if max(example.get_attribution_scores()) > 0:
                 attr_scores = example.get_attribution_scores() / max(example.get_attribution_scores())
@@ -325,7 +325,7 @@ class Evaluation(object):
                 sets_2.append(set2)
                 annotation_stats["human"].append(len(sets_2[-1]))
 
-            # Visualize sentences with highlight words to compare RIS with OccEmpty.
+            # Visualize sentences with highlight words to compare IM with LOOEmpty.
             if visualize:
                 self.highlight_text(analyzer, idx, tokens=all_tokens, set1=sets_1[-1], set2=sets_2[-1], label=example.label)
                 IoU_score = len(intersection(sets_1[-1], sets_2[-1])) / len(union(sets_1[-1], sets_2[-1]))

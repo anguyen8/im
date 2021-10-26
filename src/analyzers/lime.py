@@ -40,7 +40,7 @@ class LimeAnalyzer(Analyzer):
                 self.load_examples()
                 print("***** LOADING PRE-GENERATED EXAMPLES *****")
 
-            self.all_conf_scores, _ = self.model_wrapper.predict_proba_with_examples(self.examples)
+            self.all_conf_scores = self.model_wrapper.predict_proba_with_examples(self.examples)
             self.save_all_conf_scores()
         else:
             self.load_chunk_size_list()

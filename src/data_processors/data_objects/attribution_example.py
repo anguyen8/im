@@ -213,7 +213,7 @@ class AttrExample(object):
 
         return input_examples
 
-    def generate_candidates_for_occ_token(self, masked_examples, replaced_token):
+    def generate_candidates_for_LOO_token(self, masked_examples, replaced_token):
         # Find all the masked tokens
         input_examples = []
 

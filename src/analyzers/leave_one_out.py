@@ -6,7 +6,7 @@ from analyzers import Analyzer
 from analyzers import MASKED_EXAMPLES, INPUT_EXAMPLES, ALL_CONF_SCORES
 
 
-class OcclusionAnalyzer(Analyzer):
+class LeaveOneOutAnalyzer(Analyzer):
     def __init__(self, model_wrapper, task_name, analyzer, pickle_fn, processed_pickle_fn=MASKED_EXAMPLES, replaced_token=""):
         super().__init__(model_wrapper, task_name, analyzer, pickle_fn, processed_pickle_fn)
         self.replaced_token = replaced_token
@@ -20,7 +20,7 @@ class OcclusionAnalyzer(Analyzer):
             self.examples.append(original_example.get_input_example())
 
             masked_examples = self.dev_set[idx]["masked_examples"]
-            filled_examples = original_example.generate_candidates_for_occ_token(masked_examples, self.replaced_token)
+            filled_examples = original_example.generate_candidates_for_LOO_token(masked_examples, self.replaced_token)
             self.examples.extend(filled_examples)
 
             self.chunk_size_list.append(len(self.examples))
@@ -45,7 +45,7 @@ class OcclusionAnalyzer(Analyzer):
                 self.load_examples()
                 print("***** LOADING PRE-GENERATED EXAMPLES *****")
 
-            self.all_conf_scores, _ = self.model_wrapper.predict_proba_with_examples(self.examples)
+            self.all_conf_scores = self.model_wrapper.predict_proba_with_examples(self.examples)
             self.save_all_conf_scores()
 
             # Load dev_set again for computing attribution scores

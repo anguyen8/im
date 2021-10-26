@@ -62,7 +62,7 @@ function start_training() {
 
   local SEEDS=(42 100 200 300 400)
   local ROAR_TYPES=(vanilla vanilla_baseline bert bert_baseline)
-  local ANALYZERS=(InputMargin OccEmpty)
+  local ANALYZERS=(IM LOOEmpty)
   local ROAR_RATES=(0.1 0.2 0.3)
 
   for i in "${!ROAR_TYPES[@]}"; do

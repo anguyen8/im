@@ -12,8 +12,8 @@ from functools import wraps
 
 import numpy as np
 from matplotlib import pylab as plt
-from model_wrapper import RoBERTa_Model_Wrapper
-from analyzers import OcclusionAnalyzer
+from model_wrapper import ModelWrapper
+from analyzers import LeaveOneOutAnalyzer
 from analyzers import InputMarginalizationAnalyzer
 from analyzers import LimeAnalyzer
 from evaluation import Evaluation
@@ -105,26 +105,26 @@ def my_timer(my_func):
     return timed
 
 
-def run_occlusion(model_wrapper, task_name, analyzer, pickle_fn, replaced_token):
-    occ_analyzer = OcclusionAnalyzer(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn,
-                                     processed_pickle_fn=FILLED_EXAMPLES, replaced_token=replaced_token)
-    occ_analyzer.run()
+def run_leave_one_out(model_wrapper, task_name, analyzer, pickle_fn, replaced_token):
+    loo_analyzer = LeaveOneOutAnalyzer(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn,
+                                       processed_pickle_fn=FILLED_EXAMPLES, replaced_token=replaced_token)
+    loo_analyzer.run()
 
-    # Handle this temporarily since I haven't skipped those examples when running OccEmpty
+    # Handle this temporarily since I haven't skipped those examples when running LOOEmpty
     if task_name == "multirc" or task_name == "esnli":
         skipped_list = skipped_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else skipped_indices[task_name]
-        dev_set = [example for idx, example in enumerate(occ_analyzer.get_dev_set()) if idx not in skipped_list]
-        occ_analyzer.set_dev_set(dev_set)
+        dev_set = [example for idx, example in enumerate(loo_analyzer.get_dev_set()) if idx not in skipped_list]
+        loo_analyzer.set_dev_set(dev_set)
 
-    occ_evaluation = Evaluation(model_wrapper, occ_analyzer.get_dev_set())
+    loo_evaluation = Evaluation(model_wrapper, loo_analyzer.get_dev_set())
     eval_metric = model_wrapper.data_args.eval_metric
 
     # AUC and AUC_rep
     if eval_metric == "auc":
-        occ_evaluation.compute_auc_score(corr_pred_only=True)                   # AUC
+        loo_evaluation.compute_auc_score(corr_pred_only=True)                   # AUC
 
     elif eval_metric == "auc_bert":
-        occ_evaluation.compute_auc_score("replacement", corr_pred_only=True)    # i.e., AUC_rep
+        loo_evaluation.compute_auc_score("replacement", corr_pred_only=True)    # i.e., AUC_rep
 
     # ROAR
     elif eval_metric == "roar" or eval_metric == "roar_bert":
@@ -132,8 +132,8 @@ def run_occlusion(model_wrapper, task_name, analyzer, pickle_fn, replaced_token)
         use_bert = True if eval_metric == "roar_bert" else False
 
         for del_rate in del_rates:
-            occ_evaluation.generate_examples_for_roar(prefix=occ_analyzer.prefix,
-                                                      suffix=occ_analyzer.suffix,
+            loo_evaluation.generate_examples_for_roar(prefix=loo_analyzer.prefix,
+                                                      suffix=loo_analyzer.suffix,
                                                       del_rate=del_rate, use_bert=use_bert,
                                                       random_baseline=False)
 
@@ -156,7 +156,7 @@ def run_occlusion(model_wrapper, task_name, analyzer, pickle_fn, replaced_token)
 
             scores_baseline = []
             for alpha in alphas:
-                results = occ_evaluation.compute_IoU_score(analyzer, groundtruth_sets, alpha, visualize=True if len(alphas) == 1 else False)
+                results = loo_evaluation.compute_IoU_score(analyzer, groundtruth_sets, alpha, visualize=True if len(alphas) == 1 else False)
                 IoU, precision, recall = results["scores"]
                 scores_baseline.append(results["scores_baseline"])
 
@@ -167,29 +167,29 @@ def run_occlusion(model_wrapper, task_name, analyzer, pickle_fn, replaced_token)
                 # For easily copying to Google Sheets.
                 print("\t".join(["Baseline:", str(IoU_baseline), str(precision_baseline), str(recall_baseline)]))
 
-    del occ_analyzer
+    del loo_analyzer
 
 
 def run_input_marginalization(model_wrapper, task_name, analyzer, pickle_fn, threshold):
-    input_margin_analyzer = InputMarginalizationAnalyzer(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn,
-                                                         processed_pickle_fn=FILLED_EXAMPLES, threshold=threshold,)
-    input_margin_analyzer.run()
+    im_analyzer = InputMarginalizationAnalyzer(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn,
+                                                       processed_pickle_fn=FILLED_EXAMPLES, threshold=threshold,)
+    im_analyzer.run()
 
     # Handle this temporarily since I haven't skipped those examples when running
     if task_name == "multirc" or task_name == "esnli":
         skipped_list = skipped_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else skipped_indices[task_name]
-        dev_set = [example for idx, example in enumerate(input_margin_analyzer.get_dev_set()) if idx not in skipped_list]
-        input_margin_analyzer.set_dev_set(dev_set)
+        dev_set = [example for idx, example in enumerate(im_analyzer.get_dev_set()) if idx not in skipped_list]
+        im_analyzer.set_dev_set(dev_set)
 
-    input_margin_evaluation = Evaluation(model_wrapper, input_margin_analyzer.get_dev_set())
+    im_evaluation = Evaluation(model_wrapper, im_analyzer.get_dev_set())
     eval_metric = model_wrapper.data_args.eval_metric
 
     # AUC and AUC_rep
     if model_wrapper.data_args.eval_metric == "auc":
-        input_margin_evaluation.compute_auc_score(corr_pred_only=True)                  # AUC
+        im_evaluation.compute_auc_score(corr_pred_only=True)                  # AUC
 
     elif eval_metric == "auc_bert":
-        input_margin_evaluation.compute_auc_score("replacement", corr_pred_only=True)   # i.e., AUC_rep
+        im_evaluation.compute_auc_score("replacement", corr_pred_only=True)   # i.e., AUC_rep
 
     # ROAR
     elif eval_metric == "roar" or eval_metric == "roar_bert":
@@ -197,8 +197,8 @@ def run_input_marginalization(model_wrapper, task_name, analyzer, pickle_fn, thr
         use_bert = True if eval_metric == "roar_bert" else False
 
         for del_rate in del_rates:
-            input_margin_evaluation.generate_examples_for_roar(prefix=input_margin_analyzer.prefix,
-                                                               suffix=input_margin_analyzer.suffix,
+            im_evaluation.generate_examples_for_roar(prefix=im_analyzer.prefix,
+                                                               suffix=im_analyzer.suffix,
                                                                del_rate=del_rate, use_bert=use_bert,
                                                                random_baseline=False)
 
@@ -221,7 +221,7 @@ def run_input_marginalization(model_wrapper, task_name, analyzer, pickle_fn, thr
 
             scores_baseline = []
             for alpha in alphas:
-                results = input_margin_evaluation.compute_IoU_score(analyzer, groundtruth_sets, alpha, visualize=True if len(alphas) == 1 else False)
+                results = im_evaluation.compute_IoU_score(analyzer, groundtruth_sets, alpha, visualize=True if len(alphas) == 1 else False)
                 IoU, precision, recall = results["scores"]
                 scores_baseline.append(results["scores_baseline"])
 
@@ -232,7 +232,7 @@ def run_input_marginalization(model_wrapper, task_name, analyzer, pickle_fn, thr
                 # For easily copying to Google Sheets.
                 print("\t".join(["Baseline:", str(IoU_baseline), str(precision_baseline), str(recall_baseline)]))
 
-    del input_margin_analyzer
+    del im_analyzer
 
 
 def run_lime(model_wrapper, task_name, analyzer, pickle_fn, replaced_token):
@@ -240,7 +240,7 @@ def run_lime(model_wrapper, task_name, analyzer, pickle_fn, replaced_token):
                                  processed_pickle_fn=FILLED_EXAMPLES, replaced_token=replaced_token)
     lime_analyzer.run()
 
-    # Handle this temporarily since I haven't skipped those examples when running OccEmpty
+    # Handle this temporarily since I haven't skipped those examples when running LOOEmpty
     if task_name == "multirc" or task_name == "esnli":
         skipped_list = skipped_indices[task_name + "_split{}".format(model_wrapper.split)] if model_wrapper.max_split > 1 else skipped_indices[task_name]
         dev_set = [example for idx, example in enumerate(lime_analyzer.get_dev_set()) if idx in skipped_list]
@@ -281,7 +281,7 @@ def run_lime(model_wrapper, task_name, analyzer, pickle_fn, replaced_token):
 def run_analyzers(threshold=10e-5):
 
     # Prepare a classifier for LIME to generate explanations
-    model_wrapper = RoBERTa_Model_Wrapper()
+    model_wrapper = ModelWrapper()
     task_name = model_wrapper.data_args.task_name
 
     # Since SST-2 model is used for SST task, we need to convert it to SST-2 for loading model first and then
@@ -301,14 +301,14 @@ def run_analyzers(threshold=10e-5):
             pickle_fn = "../data/pickle_files/masked_examples/masked_examples_{}_{}.pickle".format(mode, task_name)
             model_wrapper.split = None
 
-        if analyzer == "InputMargin":
+        if analyzer == "IM":
             run_input_marginalization(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn, threshold=threshold)
-        elif analyzer == "OccEmpty":
-            run_occlusion(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn, replaced_token="")
-        elif analyzer == "OccZero":
-            run_occlusion(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn, replaced_token="[PAD]")
-        elif analyzer == "OccUnk":
-            run_occlusion(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn, replaced_token="[UNK]")
+        elif analyzer == "LOOEmpty":
+            run_leave_one_out(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn, replaced_token="")
+        elif analyzer == "LOOZero":
+            run_leave_one_out(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn, replaced_token="[PAD]")
+        elif analyzer == "LOOUnk":
+            run_leave_one_out(model_wrapper, task_name, analyzer=analyzer, pickle_fn=pickle_fn, replaced_token="[UNK]")
 
         elif analyzer == "LIME" or analyzer == "LIME-BERT":
             replace_token = "" if analyzer == "LIME" else model_wrapper.mask_token
