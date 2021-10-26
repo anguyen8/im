@@ -44,6 +44,7 @@
 
   <p align="center">
     <a href="https://arxiv.org/abs/2110.11929">Double Trouble: How to not explain a text classifier's decisions using counterfactuals synthesized by masked language models?</a>
+    <br />
     Pham, Bui, Mai, Nguyen (2021).
     <br />
     <br />
