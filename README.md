@@ -129,6 +129,11 @@ This repository contains source code necessary to reproduce some of the main res
    pip install -r requirements.txt
    ```
 
+4. Download the pre-computed pickle files of masked examples used for attribution methods and human highlights used for evaluation by running the following script
+
+    ```sh
+    python src/auto_download.py
+    ```
 
 <!-- USAGE EXAMPLES -->
 
@@ -138,7 +143,7 @@ This repository contains source code necessary to reproduce some of the main res
 
 **Summary** of the features provided (out-of-the-box):
 
-* BERT-based classifiers pre-trained on SST-2, e-SNLI, and MultiRC
+* BERT-based classifiers pre-trained on SST-2, e-SNLI, and MultiRC were uploaded to [HuggingFace](https://huggingface.co/pmthangk09) and will be loaded directly in the code for the corresponding task.
 * Generate intermediate masked text (i.e. with MASK) for `LOO` and `IM` (which needs another step to replace the MASK with BERT suggestions in order to generate counterfactuals). 
   * We also provide a _pre-computed_ pickle file of these intermediate masked examples [here](https://drive.google.com/drive/folders/17YpPgUerL_I-smN6Wy2ok4Kuu7fn6ZTx).
 * Run attribution methods 
@@ -152,56 +157,52 @@ This repository contains source code necessary to reproduce some of the main res
 Run the following turn-key script to generate quantitative results
 
 ```sh
-bash script/run_analyzers.sh TASK_NAME METRIC InputMargin
+bash script/run_analyzers.sh TASK_NAME METRIC ATTRIBUTION_METHOD
 ```
 
-EDITING HERE
 
+- Replace `TASK_NAME` with one of the following tasks: `SST-2`, `SST`, `ESNLI`, `MultiRC`.
 
+- Replace `METRIC` with one of the following metrics: `auc`, `auc_bert`, `roar`, `roar_bert`, `human_highlights`.
 
-- Notes: 
+- Replace `ATTRIBUTION_METHOD` with on of the following methods: `LOOEmpty`, `LOOUnk`, `LOOZero`, `IM`, `LIME`, `LIME-BERT`.
 
-  - Replace `TASK_NAME` with one of the following tasks: `SST-2`, `SST`, `ESNLI`, `MultiRC`.
+If the selected metric is `roar` or `roar_bert`, after generating attribution maps for `LOO` and `IM`, we need to run the following script to re-train and evaluate new models.
 
-  - Replace `METRIC` with one of the following tasks: `auc`, `auc_bert`, `roar`, `roar_bert`, `human_highlights`.
+```sh
+cd src/transformers/
+bash run_glue.sh
+```
 
-  - Input Marginalization (IM)
-
-    ```sh
-    bash script/run_analyzers.sh TASK_NAME METRIC InputMargin
-    ```
-
-  - Leave One Out variants: LOO<sub>empty</sub>, LOO<sub>unk</sub>, LOO<sub>zero</sub>
-
-    ```sh
-    bash script/run_analyzers.sh TASK_NAME METRIC OccEmpty
-    bash script/run_analyzers.sh TASK_NAME METRIC OccUnk
-    bash script/run_analyzers.sh TASK_NAME METRIC OccZero
-    ```
-
-  - LIME and LIME<sub>BERT</sub>
-
-    ```sh
-    bash script/run_analyzers.sh TASK_NAME METRIC LIME
-    bash script/run_analyzers.sh TASK_NAME METRIC LIME-BERT
-    ```
-
+<!--
 - Evaluation
 
   - Deletion and BERT-based Deletion (AUC vs. AUC<sub>rep</sub>)
   - RemOve And Retrain (ROAR)
   - Agreement with human-annotated highlights
   - Sanity check
+-->
 
-- Visualization for attribution maps (binary & real-valued)
+### 2. Visualization for attribution maps (binary & real-valued)
+
+We also provide an interactive demo to compare the qualitative results between `LOOEmpty` and `IM`. When running the below script,
 
   ```sh
   python run_demo.py --text_a "Two men dressed in black practicing martial arts on a gym floor ." 
                      --text_b "Two men are doing martial arts ."
-                     --classifier "ESNLI"
   ```
+we will get this output:
+
+[![ESNLI example][project-example-esnli-output]](https://github.com/anguyen8/im/)
+
+which is similar to one of our figures (i.e. Fig. 3) shown in the paper.
 
 [![ESNLI example][project-example-esnli]](https://github.com/anguyen8/im/)
+
+For the comparison between `LOOEmpty` and `IM` in terms of real-valued attribution maps, the above script will generate a tex file under the directory [`data/attribution_maps/`](https://github.com/anguyen8/im/tree/main/data/attribution_maps).
+We just need to simply convert this file to PDF format for viewing.
+
+[![ESNLI example][project-example-esnli-real-valued-am]](https://github.com/anguyen8/im/)
 
 <!--
 
@@ -279,3 +280,5 @@ Project Link: [https://github.com/anguyen8/im](https://github.com/anguyen8/im)
 [linkedin-url]: https://linkedin.com/in/thangpm
 [product-screenshot]: images/screenshot.png
 [project-example-esnli]: images/example_esnli.png
+[project-example-esnli-output]: images/example_esnli_output.png
+[project-example-esnli-real-valued-am]: images/example_esnli_output_real_valued_am.png
