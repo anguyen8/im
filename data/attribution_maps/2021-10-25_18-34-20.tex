@@ -1,0 +1,60 @@
+\documentclass{article}
+    \usepackage{geometry}
+    \geometry{a4paper, portrait, margin=0.5in}
+    \usepackage{color}
+    \usepackage{tcolorbox}
+    \usepackage{CJK}
+    \usepackage{adjustbox}
+    % Please add the following required packages to your document preamble:
+    \usepackage{multirow}
+    \usepackage{graphicx}
+    \usepackage{float}
+    \newcommand{\mybox}[2]{{\color{#1}\fbox{\normalcolor#2}}}
+    \tcbset{width=0.85\textwidth,boxrule=0pt,colback=red,arc=0pt,auto outer arc,left=0pt,right=0pt,boxsep=5pt}
+    \begin{document}
+    \begin{CJK*}{UTF8}{gbsn}
+\textbf{\textcolor{red}{Example 0}}
+
+Prediction: entailment
+
+Confidence scores: 0.9924
+
+\begin{table}[H]
+\centering
+\def\arraystretch{1.5}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\multirow{2}{*}{LOOEmpty
+text\_a} & \colorbox{orange!53.442}{\strut Two} & \colorbox{orange!100.0}{\strut men} & \colorbox{orange!0.664}{\strut dressed} & \colorbox{orange!0.232}{\strut in} & \colorbox{orange!2.1839999999999997}{\strut black} & \colorbox{orange!45.53}{\strut practicing} & \colorbox{orange!15.620999999999999}{\strut martial} & \colorbox{orange!7.517}{\strut arts} & \colorbox{orange!1.052}{\strut on} & \colorbox{blue!0.58}{\strut a} & \colorbox{blue!0.217}{\strut gym} & \colorbox{blue!0.602}{\strut floor} & \colorbox{orange!1.318}{\strut .} \\
+ & 0.53442 & 1.0 & 0.00664 & 0.00232 & 0.02184 & 0.4553 & 0.15621 & 0.07517 & 0.01052 & -0.0058 & -0.00217 & -0.00602 & 0.01318 \\ \hline
+
+\multirow{2}{*}{IM
+text\_a} & \colorbox{orange!71.22699999999999}{\strut Two} & \colorbox{orange!70.15400000000001}{\strut men} & \colorbox{blue!0.003}{\strut dressed} & \colorbox{orange!0.0}{\strut in} & \colorbox{orange!0.316}{\strut black} & \colorbox{orange!0.132}{\strut practicing} & \colorbox{orange!0.005}{\strut martial} & \colorbox{orange!0.002}{\strut arts} & \colorbox{blue!0.002}{\strut on} & \colorbox{blue!0.136}{\strut a} & \colorbox{orange!0.559}{\strut gym} & \colorbox{blue!0.145}{\strut floor} & \colorbox{orange!0.01}{\strut .} \\
+ & 0.71227 & 0.70154 & -3e-05 & 0.0 & 0.00316 & 0.00132 & 5e-05 & 2e-05 & -2e-05 & -0.00136 & 0.00559 & -0.00145 & 0.0001 \\ \hline
+
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[H]
+\centering
+\def\arraystretch{1.5}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|c|c|c|c|c|c|c|}
+\hline
+\multirow{2}{*}{LOOEmpty
+text\_b} & \colorbox{orange!0.8340000000000001}{\strut Two} & \colorbox{orange!31.328}{\strut men} & \colorbox{orange!3.758}{\strut are} & \colorbox{orange!56.16}{\strut doing} & \colorbox{orange!29.502}{\strut martial} & \colorbox{orange!12.529000000000002}{\strut arts} & \colorbox{orange!100.0}{\strut .} \\
+ & 0.00834 & 0.31328 & 0.03758 & 0.5616 & 0.29502 & 0.12529 & 1.0 \\ \hline
+
+\multirow{2}{*}{IM
+text\_b} & \colorbox{orange!31.221}{\strut Two} & \colorbox{orange!100.0}{\strut men} & \colorbox{orange!41.622}{\strut are} & \colorbox{orange!21.403}{\strut doing} & \colorbox{orange!1.189}{\strut martial} & \colorbox{orange!0.203}{\strut arts} & \colorbox{orange!0.13699999999999998}{\strut .} \\
+ & 0.31221 & 1.0 & 0.41622 & 0.21403 & 0.01189 & 0.00203 & 0.00137 \\ \hline
+
+\end{tabular}%
+}
+\end{table}
+
+
+\end{CJK*}
+    \end{document}
