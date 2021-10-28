@@ -93,11 +93,11 @@ This repository contains source code necessary to reproduce some of the main res
 
 **If you use this software, please consider citing:**
 
-    @inproceedings{pham2021double,
-        title={Double Trouble: How to not explain a text classifier's decisions using counterfactuals synthesized by masked language models},
-        author={Thang Pham, Trung Bui, Long Mai, Anh Nguyen},
-        booktitle={arXiv pre-print},
-        year={2021}
+    @article{pham2021double,
+      title={Double Trouble: How to not explain a text classifier's decisions using counterfactuals synthesized by masked language models?},
+      author={Pham, Thang M and Bui, Trung and Mai, Long and Nguyen, Anh},
+      journal={arXiv preprint arXiv:2110.11929},
+      year={2021}
     }
 
 <!-- GETTING STARTED -->
