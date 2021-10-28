@@ -45,12 +45,7 @@
   <p align="center">
     <a href="https://arxiv.org/abs/2110.11929">Double Trouble: How to not explain a text classifier's decisions using counterfactuals synthesized by masked language models?</a>
     <br />
-    Pham, Bui, Mai, Nguyen (2021).
-    <br />
-    <br />
-    <a href="https://github.com/anguyen8/im/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/anguyen8/im/issues">Request Feature</a>
+    Thang Pham, Trung Bui, Long Mai, Anh Nguyen (2021).
   </p>
 
 </div>
@@ -271,7 +266,8 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 ## Contact
 
-Thang Pham - [@pmthangxai](https://twitter.com/pmthangxai) - tmp0038@auburn.edu
+The entire code was done and maintained by Thang Pham, [@pmthangxai](https://twitter.com/pmthangxai) - tmp0038@auburn.edu.
+Contact us via email or create github issues if you have any questions/requests. Thanks!
 
 Project Link: [https://github.com/anguyen8/im](https://github.com/anguyen8/im)
 
