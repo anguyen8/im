@@ -171,7 +171,7 @@ This repository contains source code necessary to reproduce some of the main res
 Run the following turn-key script to generate quantitative results
 
 ```sh
-bash ../script/run_analyzers.sh TASK_NAME METRIC ATTRIBUTION_METHOD
+bash ../scripts/run_analyzers.sh TASK_NAME METRIC ATTRIBUTION_METHOD
 ```
 
 
