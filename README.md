@@ -171,15 +171,15 @@ This repository contains source code necessary to reproduce some of the main res
 Run the following turn-key script to generate quantitative results
 
 ```sh
-bash ../scripts/run_analyzers.sh TASK_NAME METRIC ATTRIBUTION_METHOD
+bash ../scripts/run_analyzers.sh ATTRIBUTION_METHOD METRIC TASK_NAME
 ```
 
 
-- Replace `TASK_NAME` with one of the following tasks: `SST-2`, `SST`, `ESNLI`, `MultiRC`.
+- Replace `ATTRIBUTION_METHOD` with on of the following methods: `LOOEmpty`, `LOOUnk`, `LOOZero`, `IM`, `LIME`, `LIME-BERT`.
 
 - Replace `METRIC` with one of the following metrics: `auc`, `auc_bert`, `roar`, `roar_bert`, `human_highlights`.
 
-- Replace `ATTRIBUTION_METHOD` with on of the following methods: `LOOEmpty`, `LOOUnk`, `LOOZero`, `IM`, `LIME`, `LIME-BERT`.
+- Replace `TASK_NAME` with one of the following tasks: `SST-2`, `SST`, `ESNLI`, `MultiRC`.
 
 If the selected metric is `roar` or `roar_bert`, after generating attribution maps for `LOO` and `IM`, we need to run the following script to re-train and evaluate new models.
 
