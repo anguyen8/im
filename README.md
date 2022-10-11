@@ -45,7 +45,7 @@
   <p align="center">
     <a href="https://arxiv.org/abs/2110.11929">Double Trouble: How to not explain a text classifier's decisions using counterfactuals synthesized by masked language models?</a>
     <br />
-    Thang Pham, Trung Bui, Long Mai, Anh Nguyen (2021).
+    Thang Pham, Trung Bui, Long Mai, Anh Nguyen (2022). <b> Oral presentation</b> at AACL-IJCNLP 2022
   </p>
 
 </div>
@@ -88,11 +88,12 @@ This repository contains source code necessary to reproduce some of the main res
 
 **If you use this software, please consider citing:**
 
-    @article{pham2021double,
+    @inproceedings{pham2022double,
       title={Double Trouble: How to not explain a text classifier's decisions using counterfactuals synthesized by masked language models?},
       author={Pham, Thang M and Bui, Trung and Mai, Long and Nguyen, Anh},
-      journal={arXiv preprint arXiv:2110.11929},
-      year={2021}
+      year={2022},
+      booktile="Proceedings of the 1st Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics and the 10th International Joint Conference on Natural Language Processing",
+      publisher = "Association for Computational Linguistics",
     }
 
 <!-- GETTING STARTED -->
